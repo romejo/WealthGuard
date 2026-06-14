@@ -1,0 +1,6 @@
+{
+  "name": "주식 포트폴리오 관리 대시보드 2",
+  "description": "다양한 자산 계좌를 등록 및 관리하고, 자산 배분 현황과 리밸런싱 계획을 손쉽게 세울 수 있는 종합 자산관리 대시보드 2 시스템입니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
