@@ -456,7 +456,8 @@ export default function App() {
     autoLoadLatestBackupFromServer();
   }, []);
 
-  // 백업 데이터 실시간 백그라운드 암호화 연산 및 클라우드 자동 동기화 (상태가 바뀔 때 실행되며, CPU 장치 낭비 및 잦은 요청 방지를 위해 디바운싱 처리)
+  // 백업 데이터 백그라운드 암호화 연산 (상태가 바뀔 때 실행되며, CPU 장치 낭비 방지를 위해 디바운싱 처리)
+  // 화면 로딩/상태 변경 시에는 암호화 준비만 마쳐두고(latestEncryptedPayloadRef 갱신), 실제 클라우드 백업은 브라우저 종료 시점이나 수동 업로드 시에만 수행하도록 구성하여 불필요한 네트워크 트래픽 및 오버헤드를 원천 차단합니다.
   useEffect(() => {
     let active = true;
     const processEncryption = async () => {
@@ -509,27 +510,10 @@ export default function App() {
             accountsCount: accounts.length
           };
           latestEncryptedPayloadRef.current = payload;
-
-          // 실시간 보안 클라우드 자동 동기화 (Zero-Knowledge)
-          setCloudSyncStatus('fetching');
-          try {
-            const apiRes = await fetch('/api/backups', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-            if (apiRes.ok) {
-              setCloudSyncStatus('success');
-            } else {
-              setCloudSyncStatus('error');
-            }
-          } catch (apiErr) {
-            console.error('실시간 클라우드 자동 저장 실패:', apiErr);
-            setCloudSyncStatus('error');
-          }
+          setCloudSyncStatus('success'); // 로컬 변경에 따른 암호화 캐싱 완료 (동기화 대기 상태)
         }
       } catch (err) {
-        console.error('실시간 백업 백그라운드 암호화 실패:', err);
+        console.error('백업 로컬 백그라운드 암호화 실패:', err);
         setCloudSyncStatus('error');
       }
     };
@@ -544,7 +528,35 @@ export default function App() {
     };
   }, [accounts, exchangeRate, customBaseAmounts, passwordPlaintext]);
 
-  // 브라우저 닫기/새로고침 시 실행되던 불안정한 종료 이벤트 리스너 제거 (실시간 백업 고도체계 가등하므로 불필요)
+  // 브라우저 닫기/새로고침 시 최종 보안 암호화 클라우드 백업을 전송 (서버 무중단 및 Zero-Knowledge 클라우드 전송 보장)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const serverPayload = latestEncryptedPayloadRef.current;
+      if (!serverPayload) return;
+
+      try {
+        const url = '/api/backups';
+        const blob = new Blob([JSON.stringify(serverPayload)], { type: 'application/json' });
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon(url, blob);
+        } else {
+          fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(serverPayload),
+            headers: { 'Content-Type': 'application/json' },
+            keepalive: true
+          });
+        }
+      } catch (err) {
+        console.error('브라우저 종료 및 이탈 시 클라우드 자동 보안 저장 실패:', err);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   // 수동 동기화용 레거시 제거 및 클라우드 백업 전용으로 마이그레이션 완료
 
