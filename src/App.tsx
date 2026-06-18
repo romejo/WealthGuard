@@ -600,54 +600,54 @@ export default function App() {
   const handleSaveServerBackupManual = async () => {
     setServerBackupsLoading(true);
     try {
-      // Ensure we have encryption payload ready or generate it right away
-      let payload = latestEncryptedPayloadRef.current;
-      if (!payload) {
-        const rebalancingTargets = (() => {
-          const savedTargetStr = localStorage.getItem('portfolio_dashboard_rebalancing_targets');
-          if (savedTargetStr) {
-            try { return JSON.parse(savedTargetStr); } catch (e) {}
-          }
-          return null;
-        })();
+      // 수동 백업 클릭 시에는 캐싱된 구형 내역을 사용하지 않고, 무조건 현재 시점 기준의 최신 데이터를 가져와 현 시간(Date.now())으로 즉시 재생성 및 새로 암호화합니다.
+      const rebalancingTargets = (() => {
+        const savedTargetStr = localStorage.getItem('portfolio_dashboard_rebalancing_targets');
+        if (savedTargetStr) {
+          try { return JSON.parse(savedTargetStr); } catch (e) {}
+        }
+        return null;
+      })();
 
-        const assetTrendsDaily = (() => {
-          const savedTrends = localStorage.getItem('portfolio_asset_trends_daily_v1');
-          if (savedTrends) {
-            try { return JSON.parse(savedTrends); } catch (e) {}
-          }
-          return null;
-        })();
+      const assetTrendsDaily = (() => {
+        const savedTrends = localStorage.getItem('portfolio_asset_trends_daily_v1');
+        if (savedTrends) {
+          try { return JSON.parse(savedTrends); } catch (e) {}
+        }
+        return null;
+      })();
 
-        const accountTrendsDaily = (() => {
-          const savedTrends = localStorage.getItem('portfolio_account_trends_daily_v1');
-          if (savedTrends) {
-            try { return JSON.parse(savedTrends); } catch (e) {}
-          }
-          return null;
-        })();
+      const accountTrendsDaily = (() => {
+        const savedTrends = localStorage.getItem('portfolio_account_trends_daily_v1');
+        if (savedTrends) {
+          try { return JSON.parse(savedTrends); } catch (e) {}
+        }
+        return null;
+      })();
 
-        const backupData = {
-          version: '1.0',
-          accounts: accounts,
-          exchangeRate: exchangeRate,
-          segmentBaseAmounts: customBaseAmounts,
-          rebalancingTargets,
-          assetTrendsDaily,
-          accountTrendsDaily,
-          exportedAt: new Date().toISOString()
-        };
+      const backupData = {
+        version: '1.0',
+        accounts: accounts,
+        exchangeRate: exchangeRate,
+        segmentBaseAmounts: customBaseAmounts,
+        rebalancingTargets,
+        assetTrendsDaily,
+        accountTrendsDaily,
+        exportedAt: new Date().toISOString()
+      };
 
-        const jsonStr = JSON.stringify(backupData);
-        const encryptionKey = passwordPlaintext || 'wealthguard_default_key';
-        const encrypted = await encryptData(jsonStr, encryptionKey);
+      const jsonStr = JSON.stringify(backupData);
+      const encryptionKey = passwordPlaintext || 'wealthguard_default_key';
+      const encrypted = await encryptData(jsonStr, encryptionKey);
 
-        payload = {
-          encryptedData: encrypted,
-          timestamp: String(Date.now()),
-          accountsCount: accounts.length
-        };
-      }
+      const payload = {
+        encryptedData: encrypted,
+        timestamp: String(Date.now()),
+        accountsCount: accounts.length
+      };
+
+      // 갱신된 백업 데이터를 캐시에도 동시 업데이트하여 다른 이벤트(예: 이탈 등) 발생 시 정합성을 맞춥니다.
+      latestEncryptedPayloadRef.current = payload;
 
       const res = await fetch('/api/backups', {
         method: 'POST',
@@ -1694,15 +1694,7 @@ export default function App() {
             <span>데이터 복구 (JSON 불러오기)</span>
           </button>
  
-          <button
-            onClick={handleSaveServerBackupManual}
-            disabled={serverBackupsLoading}
-            className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/20 transition-all mb-1 font-medium cursor-pointer"
-            title="현재 로컬 자산 데이터를 마스터 비밀번호로 E2E 암호화하여 클라우드 보안 서버에 즉시 단일 백업합니다."
-          >
-            <CloudUpload className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
-            <span>보안 백업 (수동 클라우드 업로드)</span>
-          </button>
+
         </nav>
       </aside>
  
@@ -1799,17 +1791,7 @@ export default function App() {
                 <Upload className="w-4 h-4 text-indigo-400" />
                 <span>데이터 복구 (JSON)</span>
               </button>
-              <button
-                onClick={() => {
-                  setIsMobileSidebarOpen(false);
-                  handleSaveServerBackupManual();
-                }}
-                disabled={serverBackupsLoading}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-emerald-400 hover:bg-emerald-950/20"
-              >
-                <CloudUpload className="w-4 h-4 text-emerald-400" />
-                <span>보안 백업 (수동 클라우드 업로드)</span>
-              </button>
+
             </nav>
           </div>
         </div>
