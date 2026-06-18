@@ -453,7 +453,9 @@ export default function App() {
   };
 
   useEffect(() => {
-    autoLoadLatestBackupFromServer();
+    // 화면 로드 시 서버 백업에서 브라우저 로컬 데이터를 자동 복원해 덮어쓰지 않고, 순수 로컬 데이터(localStorage)로 화면을 로딩합니다.
+    // 대신 보안 백업이 서버에 있는지 여부 현황 상태만 사전에 수 수집합니다.
+    fetchServerBackups();
   }, []);
 
   // 백업 데이터 백그라운드 암호화 연산 (상태가 바뀔 때 실행되며, CPU 장치 낭비 방지를 위해 디바운싱 처리)
@@ -1691,6 +1693,16 @@ export default function App() {
             <Upload className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
             <span>데이터 복구 (JSON 불러오기)</span>
           </button>
+ 
+          <button
+            onClick={handleSaveServerBackupManual}
+            disabled={serverBackupsLoading}
+            className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/20 transition-all mb-1 font-medium cursor-pointer"
+            title="현재 로컬 자산 데이터를 마스터 비밀번호로 E2E 암호화하여 클라우드 보안 서버에 즉시 단일 백업합니다."
+          >
+            <CloudUpload className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+            <span>보안 백업 (수동 클라우드 업로드)</span>
+          </button>
         </nav>
       </aside>
  
@@ -1786,6 +1798,17 @@ export default function App() {
               >
                 <Upload className="w-4 h-4 text-indigo-400" />
                 <span>데이터 복구 (JSON)</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsMobileSidebarOpen(false);
+                  handleSaveServerBackupManual();
+                }}
+                disabled={serverBackupsLoading}
+                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-emerald-400 hover:bg-emerald-950/20"
+              >
+                <CloudUpload className="w-4 h-4 text-emerald-400" />
+                <span>보안 백업 (수동 클라우드 업로드)</span>
               </button>
             </nav>
           </div>

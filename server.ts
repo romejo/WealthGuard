@@ -13,6 +13,7 @@ app.use(express.json({ limit: "50mb" })); // Increase limit for larger structure
 
 // --- Zero-Knowledge Encrypted Backups Server Endpoints ---
 const BACKUPS_DIR = path.join(process.cwd(), "backups");
+const BACKUP_FILE_PATH = path.join(BACKUPS_DIR, "backup.json");
 
 if (!fs.existsSync(BACKUPS_DIR)) {
   fs.mkdirSync(BACKUPS_DIR, { recursive: true });
@@ -26,48 +27,15 @@ app.post("/api/backups", (req, res) => {
       return res.status(400).json({ error: "Missing required backup fields" });
     }
 
-    // Clean timestamp for file system checks
-    const safeTimestamp = String(timestamp).replace(/[^0-9]/g, ""); // extract clean numeric timestamp
-    const tsNum = Number(safeTimestamp);
-    if (isNaN(tsNum)) {
-      return res.status(400).json({ error: "Invalid timestamp format" });
-    }
-
-    // 한국 시간(UTC+9) 기준으로 YYYY-MM-DD 날짜 추출
-    const d = new Date(tsNum + (9 * 60 * 60 * 1000));
-    const yyyy = d.getUTCFullYear();
-    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(d.getUTCDate()).padStart(2, '0');
-    const dateStr = `${yyyy}-${mm}-${dd}`;
-
-    const fileName = `backup_${dateStr}.json`;
-    const filePath = path.join(BACKUPS_DIR, fileName);
+    const safeTimestamp = String(timestamp).replace(/[^0-9]/g, "");
 
     fs.writeFileSync(
-      filePath,
+      BACKUP_FILE_PATH,
       JSON.stringify({ encryptedData, timestamp: safeTimestamp, accountsCount }, null, 2),
       "utf8"
     );
 
-    // Prune old backups (Keep only the latest 5 days/files)
-    const files = fs.readdirSync(BACKUPS_DIR)
-      .filter(file => file.startsWith("backup_") && file.endsWith(".json"))
-      .map(file => {
-        return {
-          file,
-          dateKey: file.replace("backup_", "").replace(".json", "")
-        };
-      })
-      .sort((a, b) => b.dateKey.localeCompare(a.dateKey));
-
-    if (files.length > 5) {
-      const filesToDelete = files.slice(5);
-      for (const f of filesToDelete) {
-        fs.unlinkSync(path.join(BACKUPS_DIR, f.file));
-      }
-    }
-
-    res.json({ success: true, fileName });
+    res.json({ success: true, fileName: "backup.json" });
   } catch (error) {
     console.error("Backup save error:", error);
     res.status(500).json({ error: "Failed to save backup on server" });
@@ -77,28 +45,33 @@ app.post("/api/backups", (req, res) => {
 // GET: Retrieve list of backups
 app.get("/api/backups", (req, res) => {
   try {
-    const files = fs.readdirSync(BACKUPS_DIR)
-      .filter(file => file.startsWith("backup_") && file.endsWith(".json"));
+    if (!fs.existsSync(BACKUP_FILE_PATH)) {
+      return res.json({ backups: [] });
+    }
 
-    const backups = files.map(file => {
-      try {
-        const dataStr = fs.readFileSync(path.join(BACKUPS_DIR, file), "utf8");
-        const parsed = JSON.parse(dataStr);
-        return {
-          fileName: file,
-          timestamp: parsed.timestamp,
+    const dataStr = fs.readFileSync(BACKUP_FILE_PATH, "utf8");
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(dataStr);
+    } catch (e) {
+      return res.json({ backups: [] });
+    }
+
+    // 만약 파일은 있지만 encryptedData가 없는 더미 상태라면 목록 없음으로 간주
+    if (!parsed.encryptedData) {
+      return res.json({ backups: [] });
+    }
+
+    res.json({
+      backups: [
+        {
+          fileName: "backup.json",
+          timestamp: parsed.timestamp || "0",
           accountsCount: parsed.accountsCount || 0,
           size: dataStr.length
-        };
-      } catch (err) {
-        return null;
-      }
-    }).filter(b => b !== null) as any[];
-
-    // Sort backups descending
-    backups.sort((a, b) => b.fileName.localeCompare(a.fileName));
-
-    res.json({ backups });
+        }
+      ]
+    });
   } catch (error) {
     console.error("List backups error:", error);
     res.status(500).json({ error: "Failed to read backups list" });
@@ -108,15 +81,11 @@ app.get("/api/backups", (req, res) => {
 // GET: Retrieve a specific backup
 app.get("/api/backups/:filename", (req, res) => {
   try {
-    const { filename } = req.params;
-    const safeName = path.basename(filename);
-    const filePath = path.join(BACKUPS_DIR, safeName);
-
-    if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(BACKUP_FILE_PATH)) {
       return res.status(404).json({ error: "Backup file not found" });
     }
 
-    const dataStr = fs.readFileSync(filePath, "utf8");
+    const dataStr = fs.readFileSync(BACKUP_FILE_PATH, "utf8");
     res.setHeader("Content-Type", "application/json");
     res.send(dataStr);
   } catch (error) {
@@ -128,12 +97,13 @@ app.get("/api/backups/:filename", (req, res) => {
 // DELETE: Delete a backup
 app.delete("/api/backups/:filename", (req, res) => {
   try {
-    const { filename } = req.params;
-    const safeName = path.basename(filename);
-    const filePath = path.join(BACKUPS_DIR, safeName);
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (fs.existsSync(BACKUP_FILE_PATH)) {
+      // 안전 소멸을 위해 파일을 완벽히 리셋하거나 언링크합니다.
+      fs.writeFileSync(
+        BACKUP_FILE_PATH,
+        JSON.stringify({ encryptedData: "", timestamp: "0", accountsCount: 0 }, null, 2),
+        "utf8"
+      );
     }
     res.json({ success: true });
   } catch (error) {
