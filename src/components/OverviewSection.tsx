@@ -1459,7 +1459,7 @@ export default function OverviewSection({
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
           {/* Chart Area */}
-          <div className="xl:col-span-8 h-[480px] sm:h-[540px] w-full relative">
+          <div className="xl:col-span-9 h-[480px] sm:h-[540px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart 
                 data={selectedSegment ? portfolioChartData : accountChartData} 
@@ -1524,7 +1524,7 @@ export default function OverviewSection({
           </div>
 
           {/* Real-time Changes Stats Cards Container */}
-          <div className="xl:col-span-4 space-y-2.5">
+          <div className="xl:col-span-3 space-y-2.5">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">계좌별 전일 대비 증감 (Daily Delta)</span>
             <div className="grid grid-cols-1 gap-2 border-l border-slate-100 pl-1">
               {segments.map((seg, idx) => {
