@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Account, StockItem } from './types';
 import { DEFAULT_ACCOUNTS, USD_EXCHANGE_RATE, KNOWN_STOCKS, DEFAULT_REBALANCING_TARGETS } from './initialData';
+import { RECOVERED_DATA } from './recoveredData';
 import AccountTable from './components/AccountTable';
 import OverviewSection from './components/OverviewSection';
 import AssetTrendSection from './components/AssetTrendSection';
@@ -30,6 +31,84 @@ import {
   History,
   Clock
 } from 'lucide-react';
+
+// --- Asset Trend Category Exact Recovery Engine ---
+interface RawAccountTrend {
+  date: string;
+  [key: string]: string | number;
+}
+
+function computeExactAssetTrends(
+  accountTrends: RawAccountTrend[],
+  accountsForLookup: any[]
+): any[] {
+  const categoryMap: Record<string, string> = {
+    "예수금(현금)": "현금",
+    "예수금": "현금",
+    "달러": "현금",
+    "현금": "현금"
+  };
+
+  accountsForLookup.forEach(acc => {
+    if (acc.stocks) {
+      acc.stocks.forEach((s: any) => {
+        categoryMap[s.name.trim()] = s.category;
+      });
+    }
+  });
+
+  const getCategory = (stockName: string): string => {
+    const trimmed = stockName.trim();
+    if (categoryMap[trimmed]) return categoryMap[trimmed];
+
+    const norm = trimmed.toLowerCase();
+    if (norm.includes('예수금') || norm.includes('현금') || norm === '달러' || norm === 'usdc' || norm.includes('머니마켓')) {
+      return '현금';
+    }
+    if (norm.includes('금현물') || norm.includes('은선물') || norm === '금온' || norm === '금은' || norm === '금' || norm === '은') {
+      return '금은';
+    }
+    if (norm.includes('tiger') || norm.includes('kodex') || norm.includes('ace') || norm.includes('sol') || norm.includes('hanaro') || norm.includes('koact') || norm.includes('etf')) {
+      return 'ETF';
+    }
+    if (norm === '엔비디아' || norm === 'nvidia' || norm === 'apple' || norm === 'tesla' || norm === 'microsoft' || norm === 'google') {
+      return '해외주식';
+    }
+    return '국내주식';
+  };
+
+  return accountTrends.map((trend) => {
+    const dailyAllocation = {
+      date: trend.date,
+      "국내주식": 0,
+      "해외주식": 0,
+      "ETF": 0,
+      "금은": 0,
+      "현금": 0
+    };
+
+    Object.entries(trend).forEach(([key, value]) => {
+      if (key === 'date') return;
+      if (typeof value !== 'number') return;
+
+      if (key.includes('_')) {
+        const parts = key.split('_');
+        const stockName = parts[parts.length - 1];
+        const category = getCategory(stockName);
+
+        if (category === 'ETF') {
+          dailyAllocation.ETF += value;
+        } else if (category === '현금') {
+          dailyAllocation.현금 += value;
+        } else if (category === '국내주식' || category === '해외주식' || category === '금은') {
+          dailyAllocation[category] += value;
+        }
+      }
+    });
+
+    return dailyAllocation;
+  });
+}
 
 // --- Cryptography Helpers (Zero-Knowledge Native Web Crypto API) ---
 async function hashPassword(password: string): Promise<string> {
@@ -628,6 +707,29 @@ export default function App() {
 
   // Load initial settings on mounting
   useEffect(() => {
+    // Custom active user data restore sequence with precise ETF classification integration
+    const hasActiveRecoveryRun = localStorage.getItem('portfolio_dashboard_restored_uploaded_v12_etf_recovered');
+    if (hasActiveRecoveryRun !== 'yes') {
+      const preciseAssetTrends = computeExactAssetTrends(RECOVERED_DATA.accountTrendsDaily, RECOVERED_DATA.accounts);
+
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(RECOVERED_DATA.accounts));
+      localStorage.setItem(RATE_STORAGE_KEY, RECOVERED_DATA.exchangeRate.toString());
+      localStorage.setItem('portfolio_dashboard_segment_base_amounts', JSON.stringify(RECOVERED_DATA.segmentBaseAmounts));
+      localStorage.setItem('portfolio_dashboard_rebalancing_targets', JSON.stringify(RECOVERED_DATA.rebalancingTargets));
+      localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(preciseAssetTrends));
+      localStorage.setItem('portfolio_account_trends_daily_v1', JSON.stringify(RECOVERED_DATA.accountTrendsDaily));
+      localStorage.setItem('portfolio_account_trends_daily_v3_fixed', JSON.stringify(RECOVERED_DATA.accountTrendsDaily));
+      localStorage.setItem('portfolio_dashboard_restored_uploaded_v12_etf_recovered', 'yes');
+      localStorage.setItem('portfolio_dashboard_restored_uploaded_v5_gold', 'yes');
+
+      setAccounts(RECOVERED_DATA.accounts as Account[]);
+      setExchangeRate(RECOVERED_DATA.exchangeRate);
+      setCustomBaseAmounts(RECOVERED_DATA.segmentBaseAmounts);
+      setAccountTrends(RECOVERED_DATA.accountTrendsDaily);
+      setBackupKey(prev => prev + 1);
+      return;
+    }
+
     // Force write user backup the very first time to ensure clean recovery
     const hasRecovered = localStorage.getItem('portfolio_dashboard_restored_uploaded_v5_gold');
     if (hasRecovered !== 'yes') {
@@ -1051,8 +1153,19 @@ export default function App() {
         }
 
         // 5. 일별 종합 자산 추이 기록 복원
-        if (Array.isArray(importedAssetTrends)) {
-          localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(importedAssetTrends));
+        let finalAssetTrends = importedAssetTrends;
+        if (Array.isArray(importedAccountTrends) && Array.isArray(importedAccounts)) {
+          const hasMissingETF = !Array.isArray(importedAssetTrends) || 
+            importedAssetTrends.length === 0 || 
+            importedAssetTrends.every(item => !item.ETF || item.ETF === 0);
+            
+          if (hasMissingETF) {
+            finalAssetTrends = computeExactAssetTrends(importedAccountTrends, importedAccounts);
+          }
+        }
+
+        if (Array.isArray(finalAssetTrends)) {
+          localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(finalAssetTrends));
         }
 
         // 6. 계좌별 일별 자산 추이 기록 복원
