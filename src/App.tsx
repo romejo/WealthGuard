@@ -28,12 +28,7 @@ import {
   Eye,
   EyeOff,
   History,
-  Clock,
-  Cloud,
-  CloudOff,
-  CloudUpload,
-  CloudDownload,
-  Trash2
+  Clock
 } from 'lucide-react';
 
 // --- Cryptography Helpers (Zero-Knowledge Native Web Crypto API) ---
@@ -366,109 +361,17 @@ export default function App() {
   const [newAccountName, setNewAccountName] = useState<string>('');
   const [newAccountCash, setNewAccountCash] = useState<string>('');
 
-  // --- 브라우저 종료 자동 백업 관련 상태 및 로직 ---
-  const [isAutoBackupModalOpen, setIsAutoBackupModalOpen] = useState<boolean>(false);
 
-  const latestEncryptedPayloadRef = useRef<{ encryptedData: string; timestamp: string; accountsCount: number } | null>(null);
 
-  // --- 클라우드 백업 자동 로딩 제어기 (Zero-Knowledge) ---
-  const [cloudSyncStatus, setCloudSyncStatus] = useState<'idle' | 'fetching' | 'success' | 'no_backup' | 'locked' | 'error'>('idle');
-  const latestDownloadedBackupRef = useRef<string | null>(null);
-
-  const autoLoadLatestBackupFromServer = async (passwordKey?: string) => {
-    setCloudSyncStatus('fetching');
-    try {
-      const listRes = await fetch('/api/backups');
-      if (!listRes.ok) throw new Error('서버 백업 목록 수신 실패');
-      const listData = await listRes.json();
-      const backups = listData.backups || [];
-      if (backups.length === 0) {
-        setCloudSyncStatus('no_backup');
-        return;
-      }
-      
-      const latestBackup = backups[0];
-      const fileRes = await fetch(`/api/backups/${latestBackup.fileName}`);
-      if (!fileRes.ok) throw new Error('최신 백업 다운로드 실패');
-      const fileData = await fileRes.json();
-      const encryptedData = fileData.encryptedData;
-      if (!encryptedData) throw new Error('암호화 데이터 누락');
-
-      let decryptedStr = '';
-      const key = passwordKey || passwordPlaintext || 'wealthguard_default_key';
-      try {
-        decryptedStr = await decryptData(encryptedData, key);
-      } catch (e) {
-        const hasSavedPw = localStorage.getItem('portfolio_app_password');
-        if (hasSavedPw && !passwordKey) {
-          setCloudSyncStatus('locked');
-          latestDownloadedBackupRef.current = encryptedData;
-          return;
-        } else {
-          throw e;
-        }
-      }
-
-      const parsed = JSON.parse(decryptedStr);
-      const importedAccounts = parsed.accounts;
-      const importedRate = parsed.exchangeRate ? Number(parsed.exchangeRate) : null;
-      const importedTargets = parsed.rebalancingTargets;
-      const importedSegmentBaseAmounts = parsed.segmentBaseAmounts;
-      const importedAssetTrends = parsed.assetTrendsDaily;
-      const importedAccountTrends = parsed.accountTrendsDaily;
-
-      if (importedAccounts) {
-        setAccounts(importedAccounts);
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(importedAccounts));
-      }
-
-      if (importedRate && !isNaN(importedRate) && importedRate > 0) {
-        setExchangeRate(importedRate);
-        localStorage.setItem(RATE_STORAGE_KEY, importedRate.toString());
-      }
-
-      if (importedTargets) {
-        localStorage.setItem('portfolio_dashboard_rebalancing_targets', JSON.stringify(importedTargets));
-      }
-
-      if (importedSegmentBaseAmounts) {
-        setCustomBaseAmounts(importedSegmentBaseAmounts);
-        localStorage.setItem('portfolio_dashboard_segment_base_amounts', JSON.stringify(importedSegmentBaseAmounts));
-      }
-
-      if (importedAssetTrends) {
-        localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(importedAssetTrends));
-      }
-
-      if (importedAccountTrends) {
-        setAccountTrends(importedAccountTrends);
-        localStorage.setItem('portfolio_account_trends_daily_v1', JSON.stringify(importedAccountTrends));
-      }
-
-      setCloudSyncStatus('success');
-    } catch (err) {
-      console.error('클라우드 백업 자동 로드 실패:', err);
-      setCloudSyncStatus('error');
-    }
-  };
-
+  // 브라우저 닫기/새로고침 시 PC에 JSON 파일 강제 자동 다운로드 기능 실행
   useEffect(() => {
-    // 화면 로드 시 서버 백업에서 브라우저 로컬 데이터를 자동 복원해 덮어쓰지 않고, 순수 로컬 데이터(localStorage)로 화면을 로딩합니다.
-    // 대신 보안 백업이 서버에 있는지 여부 현황 상태만 사전에 수 수집합니다.
-    fetchServerBackups();
-  }, []);
-
-  // 백업 데이터 백그라운드 암호화 연산 (상태가 바뀔 때 실행되며, CPU 장치 낭비 방지를 위해 디바운싱 처리)
-  // 화면 로딩/상태 변경 시에는 암호화 준비만 마쳐두고(latestEncryptedPayloadRef 갱신), 실제 클라우드 백업은 브라우저 종료 시점이나 수동 업로드 시에만 수행하도록 구성하여 불필요한 네트워크 트래픽 및 오버헤드를 원천 차단합니다.
-  useEffect(() => {
-    let active = true;
-    const processEncryption = async () => {
-      if (!accounts || accounts.length === 0) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // 화면 종료 및 새로고침 시 사용자 PC에 JSON 백업 파일 강제 자동 다운로드 유도
       try {
         const rebalancingTargets = (() => {
           const savedTargetStr = localStorage.getItem('portfolio_dashboard_rebalancing_targets');
           if (savedTargetStr) {
-            try { return JSON.parse(savedTargetStr); } catch (e) {}
+            try { return JSON.parse(savedTargetStr); } catch (err) {}
           }
           return null;
         })();
@@ -476,7 +379,7 @@ export default function App() {
         const assetTrendsDaily = (() => {
           const savedTrends = localStorage.getItem('portfolio_asset_trends_daily_v1');
           if (savedTrends) {
-            try { return JSON.parse(savedTrends); } catch (e) {}
+            try { return JSON.parse(savedTrends); } catch (err) {}
           }
           return null;
         })();
@@ -484,7 +387,7 @@ export default function App() {
         const accountTrendsDaily = (() => {
           const savedTrends = localStorage.getItem('portfolio_account_trends_daily_v1');
           if (savedTrends) {
-            try { return JSON.parse(savedTrends); } catch (e) {}
+            try { return JSON.parse(savedTrends); } catch (err) {}
           }
           return null;
         })();
@@ -500,65 +403,42 @@ export default function App() {
           exportedAt: new Date().toISOString()
         };
 
-        const jsonStr = JSON.stringify(backupData);
-        // 비밀번호 설정 상태인 경우 해당 비밀번호로 AES-GCM 암호화 진행, 비설정 시 디폴트 키 사용
-        const encryptionKey = passwordPlaintext || 'wealthguard_default_key';
-        const encrypted = await encryptData(jsonStr, encryptionKey);
-
-        if (active) {
-          const payload = {
-            encryptedData: encrypted,
-            timestamp: String(Date.now()),
-            accountsCount: accounts.length
-          };
-          latestEncryptedPayloadRef.current = payload;
-          setCloudSyncStatus('success'); // 로컬 변경에 따른 암호화 캐싱 완료 (동기화 대기 상태)
-        }
+        const dataStr = JSON.stringify(backupData, null, 2);
+        
+        // 동기식 클릭 다운로드를 안전하게 처리하기 위해 Data URI 버퍼 포맷 생성
+        const url = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.href = url;
+        
+        // 파일 실시간 저장 식별명 부여
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        const ss = String(d.getSeconds()).padStart(2, '0');
+        const timeStr = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+        
+        downloadAnchor.download = `wealthguard_auto_exit_backup_${timeStr}.json`;
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
       } catch (err) {
-        console.error('백업 로컬 백그라운드 암호화 실패:', err);
-        setCloudSyncStatus('error');
+        console.error('종료 시 로컬 파일 자동 백업 다운로드 실패:', err);
       }
-    };
 
-    const timeout = setTimeout(() => {
-      processEncryption();
-    }, 1500);
-
-    return () => {
-      active = false;
-      clearTimeout(timeout);
-    };
-  }, [accounts, exchangeRate, customBaseAmounts, passwordPlaintext]);
-
-  // 브라우저 닫기/새로고침 시 최종 보안 암호화 클라우드 백업을 전송 (서버 무중단 및 Zero-Knowledge 클라우드 전송 보장)
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      const serverPayload = latestEncryptedPayloadRef.current;
-      if (!serverPayload) return;
-
-      try {
-        const url = '/api/backups';
-        const blob = new Blob([JSON.stringify(serverPayload)], { type: 'application/json' });
-        if (navigator.sendBeacon) {
-          navigator.sendBeacon(url, blob);
-        } else {
-          fetch(url, {
-            method: 'POST',
-            body: JSON.stringify(serverPayload),
-            headers: { 'Content-Type': 'application/json' },
-            keepalive: true
-          });
-        }
-      } catch (err) {
-        console.error('브라우저 종료 및 이탈 시 클라우드 자동 보안 저장 실패:', err);
-      }
+      // 브라우저의 비동기 다운로드 및 전송 큐가 취소되지 않도록 페이지 퇴출 직전 확인 팝업창을 띄워 대기시킵니다.
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [accounts, exchangeRate, customBaseAmounts]);
 
   // 수동 동기화용 레거시 제거 및 클라우드 백업 전용으로 마이그레이션 완료
 
@@ -577,193 +457,7 @@ export default function App() {
   const [modalError, setModalError] = useState<string>('');
   const [modalSuccess, setModalSuccess] = useState<string>('');
 
-  // --- 클라우드 암호화 서버 백업 상태 ---
-  const [serverBackups, setServerBackups] = useState<any[]>([]);
-  const [serverBackupsLoading, setServerBackupsLoading] = useState<boolean>(false);
-  const [serverBackupsError, setServerBackupsError] = useState<string>('');
 
-  const fetchServerBackups = async () => {
-    setServerBackupsLoading(true);
-    setServerBackupsError('');
-    try {
-      const res = await fetch('/api/backups');
-      if (!res.ok) throw new Error('서버 백업 리스트를 가져오는 데 실패했습니다.');
-      const data = await res.json();
-      setServerBackups(data.backups || []);
-    } catch (err) {
-      setServerBackupsError((err as Error).message);
-    } finally {
-      setServerBackupsLoading(false);
-    }
-  };
-
-  const handleSaveServerBackupManual = async () => {
-    setServerBackupsLoading(true);
-    try {
-      // 수동 백업 클릭 시에는 캐싱된 구형 내역을 사용하지 않고, 무조건 현재 시점 기준의 최신 데이터를 가져와 현 시간(Date.now())으로 즉시 재생성 및 새로 암호화합니다.
-      const rebalancingTargets = (() => {
-        const savedTargetStr = localStorage.getItem('portfolio_dashboard_rebalancing_targets');
-        if (savedTargetStr) {
-          try { return JSON.parse(savedTargetStr); } catch (e) {}
-        }
-        return null;
-      })();
-
-      const assetTrendsDaily = (() => {
-        const savedTrends = localStorage.getItem('portfolio_asset_trends_daily_v1');
-        if (savedTrends) {
-          try { return JSON.parse(savedTrends); } catch (e) {}
-        }
-        return null;
-      })();
-
-      const accountTrendsDaily = (() => {
-        const savedTrends = localStorage.getItem('portfolio_account_trends_daily_v1');
-        if (savedTrends) {
-          try { return JSON.parse(savedTrends); } catch (e) {}
-        }
-        return null;
-      })();
-
-      const backupData = {
-        version: '1.0',
-        accounts: accounts,
-        exchangeRate: exchangeRate,
-        segmentBaseAmounts: customBaseAmounts,
-        rebalancingTargets,
-        assetTrendsDaily,
-        accountTrendsDaily,
-        exportedAt: new Date().toISOString()
-      };
-
-      const jsonStr = JSON.stringify(backupData);
-      const encryptionKey = passwordPlaintext || 'wealthguard_default_key';
-      const encrypted = await encryptData(jsonStr, encryptionKey);
-
-      const payload = {
-        encryptedData: encrypted,
-        timestamp: String(Date.now()),
-        accountsCount: accounts.length
-      };
-
-      // 갱신된 백업 데이터를 캐시에도 동시 업데이트하여 다른 이벤트(예: 이탈 등) 발생 시 정합성을 맞춥니다.
-      latestEncryptedPayloadRef.current = payload;
-
-      const res = await fetch('/api/backups', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) throw new Error('서버 백업 등록 중 오류 발생');
-      alert('🔒 비밀번호로 종단간(E2EE) 암호화를 마친 백업 파일이 클라우드 보안 서버에 정상 동기화되었습니다!');
-      fetchServerBackups();
-    } catch (err) {
-      alert('서버 백업 업로드 중 오류 발생: ' + (err as Error).message);
-    } finally {
-      setServerBackupsLoading(false);
-    }
-  };
-
-  const handleDeleteServerBackup = async (fileName: string) => {
-    if (!window.confirm('⚠️ 해당 클라우드 보안 백업 기록을 영구히 삭제하시겠습니까?')) return;
-    setServerBackupsLoading(true);
-    try {
-      const res = await fetch(`/api/backups/${fileName}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('백업 삭제 실패');
-      alert('🗑️ 서버 백업 파일이 완전히 안전 소멸되었습니다.');
-      fetchServerBackups();
-    } catch (err) {
-      alert('서버 백업 삭제 중 실패: ' + (err as Error).message);
-    } finally {
-      setServerBackupsLoading(false);
-    }
-  };
-
-  const handleRestoreServerBackup = async (backupItem: any) => {
-    const backupTimeStr = new Date(Number(backupItem.timestamp)).toLocaleString();
-    const confirmMsg = `⚠️ [서버 암호화 백업 복원]\n\n[백업 서버 기록지: ${backupTimeStr}]\n\n비밀번호와 암호 장벽으로 격리된 서버 백업본을 복화하여 현재 대시보드를 완전히 덮어쓰시겠습니까?\n\n이 작업은 현 세션 데이터를 날리고 완전히 대체되며 되돌릴 수 없습니다.`;
-    
-    if (!window.confirm(confirmMsg)) return;
-
-    setServerBackupsLoading(true);
-    try {
-      const res = await fetch(`/api/backups/${backupItem.fileName}`);
-      if (!res.ok) throw new Error('암호화 백업을 다운로드하는 데 실패했습니다.');
-      const data = await res.json();
-      
-      const encryptedData = data.encryptedData;
-      if (!encryptedData) throw new Error('유효한 암호화 백업 문자 조각이 없습니다.');
-
-      // 복호화 시도
-      let decryptedStr = '';
-      const keyCandidates = [passwordPlaintext, 'wealthguard_default_key'].filter(Boolean);
-      
-      let success = false;
-      for (const key of keyCandidates) {
-        try {
-          decryptedStr = await decryptData(encryptedData, key!);
-          success = true;
-          break;
-        } catch (e) {}
-      }
-
-      // 평문이 매치되지 않으면 수동으로 복구용 비밀번호 프롬프트 표시
-      if (!success) {
-        const inputPw = prompt("🔒 이 영지식 서버 백업본은 다른 세션 비밀번호로 암호화되어 잠겨 있습니다. 복구를 수동 진행하기 위해 당시 백업의 비밀번호 4자리 이상을 입력해 주십시오:");
-        if (inputPw === null) {
-          setServerBackupsLoading(false);
-          return;
-        }
-        try {
-          decryptedStr = await decryptData(encryptedData, inputPw.trim());
-          success = true;
-        } catch (decryptErr) {
-          throw new Error('복호화 비밀번호가 어긋났습니다. 올바른 비밀번호를 입력해 주십시오.');
-        }
-      }
-
-      // 파싱
-      const parsed = JSON.parse(decryptedStr);
-      const importedAccounts = parsed.accounts;
-      const importedRate = parsed.exchangeRate ? Number(parsed.exchangeRate) : null;
-      const importedTargets = parsed.rebalancingTargets;
-      const importedSegmentBaseAmounts = parsed.segmentBaseAmounts;
-      const importedAssetTrends = parsed.assetTrendsDaily;
-      const importedAccountTrends = parsed.accountTrendsDaily;
-
-      saveAccounts(importedAccounts);
-
-      if (importedRate && !isNaN(importedRate) && importedRate > 0) {
-        saveExchangeRate(importedRate);
-      }
-
-      if (importedTargets) {
-        localStorage.setItem('portfolio_dashboard_rebalancing_targets', JSON.stringify(importedTargets));
-      }
-
-      if (importedSegmentBaseAmounts) {
-        setCustomBaseAmounts(importedSegmentBaseAmounts);
-        localStorage.setItem('portfolio_dashboard_segment_base_amounts', JSON.stringify(importedSegmentBaseAmounts));
-      }
-
-      if (importedAssetTrends) {
-        localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(importedAssetTrends));
-      }
-
-      if (importedAccountTrends) {
-        setAccountTrends(importedAccountTrends);
-        localStorage.setItem('portfolio_account_trends_daily_v1', JSON.stringify(importedAccountTrends));
-      }
-
-      alert('🎉 웰스가드 종단 전 구간 암호 해제가 무사히 완료되어 백업 데이터가 정상 복구되었습니다!');
-      setIsAutoBackupModalOpen(false);
-    } catch (err) {
-      alert('클라우드 복원 오류: ' + (err as Error).message);
-    } finally {
-      setServerBackupsLoading(false);
-    }
-  };
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -791,46 +485,7 @@ export default function App() {
         setPasswordError('');
         setPasswordInput('');
 
-        // 잠금 해제 시 최신 클라우드 백업 캐싱이 있으면 자동 연동
-        if (latestDownloadedBackupRef.current) {
-          try {
-            const decData = await decryptData(latestDownloadedBackupRef.current, passwordInput);
-            const parsed = JSON.parse(decData);
-            const importedAccounts = parsed.accounts;
-            const importedRate = parsed.exchangeRate ? Number(parsed.exchangeRate) : null;
-            const importedTargets = parsed.rebalancingTargets;
-            const importedSegmentBaseAmounts = parsed.segmentBaseAmounts;
-            const importedAssetTrends = parsed.assetTrendsDaily;
-            const importedAccountTrends = parsed.accountTrendsDaily;
 
-            if (importedAccounts) {
-              setAccounts(importedAccounts);
-              localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(importedAccounts));
-            }
-            if (importedRate && !isNaN(importedRate) && importedRate > 0) {
-              setExchangeRate(importedRate);
-              localStorage.setItem(RATE_STORAGE_KEY, importedRate.toString());
-            }
-            if (importedTargets) {
-              localStorage.setItem('portfolio_dashboard_rebalancing_targets', JSON.stringify(importedTargets));
-            }
-            if (importedSegmentBaseAmounts) {
-              setCustomBaseAmounts(importedSegmentBaseAmounts);
-              localStorage.setItem('portfolio_dashboard_segment_base_amounts', JSON.stringify(importedSegmentBaseAmounts));
-            }
-            if (importedAssetTrends) {
-              localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(importedAssetTrends));
-            }
-            if (importedAccountTrends) {
-              setAccountTrends(importedAccountTrends);
-              localStorage.setItem('portfolio_account_trends_daily_v1', JSON.stringify(importedAccountTrends));
-            }
-            setCloudSyncStatus('success');
-          } catch (decryptErr) {
-            console.error('인증 성공 후 클라우드 백업 자동 복화 실패:', decryptErr);
-            setCloudSyncStatus('error');
-          }
-        }
       } else {
         setPasswordError('비밀번호가 올바르지 않습니다. 다시 확인해 주세요.');
       }
@@ -1664,18 +1319,7 @@ export default function App() {
             <span>비밀번호 & 보안 설정 ({savedPassword ? '보안 활성' : '미설정'})</span>
           </button>
 
-          <button
-            onClick={() => {
-              fetchServerBackups();
-              setIsAutoBackupModalOpen(true);
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/20 transition-all mb-1 font-medium cursor-pointer"
-            title="실시간으로 서버 클라우드와 영지식 암호화 동기화 중인 보안 백업들을 관리 및 복원합니다."
-          >
-            <Cloud className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
-            <span>보안 클라우드 백업 관리 ({serverBackups.length}개 보관)</span>
-          </button>
- 
+
           <button
             onClick={handleExportData}
             className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-950/20 transition-all mb-1 font-medium"
@@ -1770,17 +1414,7 @@ export default function App() {
                 <Lock className="w-4 h-4 text-amber-400" />
                 <span>비밀번호 & 보안 ({savedPassword ? '보안 활성' : '미설정'})</span>
               </button>
-              <button
-                onClick={() => {
-                  setIsMobileSidebarOpen(false);
-                  fetchServerBackups();
-                  setIsAutoBackupModalOpen(true);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-emerald-400 hover:bg-emerald-950/20"
-              >
-                <Cloud className="w-4 h-4 text-emerald-400" />
-                <span>보안 클라우드 백업 관리 ({serverBackups.length})</span>
-              </button>
+
               <button
                 onClick={() => {
                   setIsMobileSidebarOpen(false);
@@ -1824,39 +1458,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3 lg:gap-5">
-            {/* 클라우드 동기화 상태 배지 */}
-            <div className="flex items-center gap-1.5 text-[10px] sm:text-xs">
-              {cloudSyncStatus === 'fetching' && (
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 border border-indigo-100/60 rounded-lg text-indigo-600 animate-pulse font-medium">
-                  <RefreshCw className="w-3 h-3 animate-spin" />
-                  <span className="hidden sm:inline">백업 연동중...</span>
-                </div>
-              )}
-              {cloudSyncStatus === 'success' && (
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 border border-emerald-100/60 rounded-lg text-emerald-600 font-medium">
-                  <Cloud className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="hidden sm:inline">실시간 클라우드 연동</span>
-                </div>
-              )}
-              {cloudSyncStatus === 'no_backup' && (
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 font-medium">
-                  <CloudOff className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="hidden sm:inline">서버 백업 없음</span>
-                </div>
-              )}
-              {cloudSyncStatus === 'locked' && (
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-100/60 rounded-lg text-amber-600 font-medium">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-                  <span className="hidden sm:inline">백업 잠김 (인증 요함)</span>
-                </div>
-              )}
-              {cloudSyncStatus === 'error' && (
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-rose-50 border border-rose-100/60 rounded-lg text-rose-600 font-medium">
-                  <Database className="w-3.5 h-3.5 text-rose-500" />
-                  <span className="hidden sm:inline">백업 연동 에러</span>
-                </div>
-              )}
-            </div>
+
 
             {/* 환율 입력 필드 */}
             <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-1.5">
@@ -2217,156 +1819,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 실시간 클라우드 백업 관리 모달 */}
-      {isAutoBackupModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 font-sans text-slate-800 animate-fade-in">
-          <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-lg overflow-hidden shadow-2xl animate-scale-up">
-            
-            {/* Modal Title */}
-            <div className="bg-slate-950 text-white p-5 flex items-center justify-between border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <Cloud className="w-5 h-5 text-indigo-400 animate-pulse" />
-                <h3 className="text-sm font-bold">WealthGuard 보안 클라우드 백업 센터</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAutoBackupModalOpen(false)}
-                className="text-slate-400 hover:text-white transition-all cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* Modal Contents */}
-            <div className="p-6 space-y-4">
-              <div className="bg-indigo-50 border border-indigo-150 text-indigo-950 rounded-xl p-4 text-[11px] leading-relaxed space-y-1">
-                <div className="flex items-center gap-1 text-indigo-700 font-bold text-xs">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500 animate-pulse" />
-                  <span>Zero-Knowledge (전 구간 암호 장벽 작동 중)</span>
-                </div>
-                <p className="text-slate-600 font-medium">
-                  현재 설정된 개인 비밀번호를 암호키로 삼아 브라우저 단에서 <strong>AES-GCM 256비트 표준 군사급 보안 장벽</strong>으로 전폭 암호화된 상태로 서버 클라우드에 전송 및 저장됩니다.
-                </p>
-                <p className="text-slate-500 mt-1">
-                  데이터 원본이 전 구간 암호화된 채 유통되기 때문에 본인 외에는 서버 개발자를 포함한 어떤 제3자도 자산 내역을 복호화하거나 볼 수 없습니다.
-                </p>
-                {savedPassword ? (
-                  <div className="text-emerald-700 font-bold flex items-center gap-1 mt-1 text-[10px]">
-                    ● 개인 마스터 비밀번호로 완벽 차폐 및 암호 동기화 구동 중
-                  </div>
-                ) : (
-                  <div className="text-amber-700 font-bold flex items-center gap-1 mt-1 text-[10px]">
-                    ⚠️ 비밀번호 미설정 상태: 기본 공용 키로 저장됩니다. (안전한 보호를 위해 고유 비밀번호 설정을 권유합니다.)
-                  </div>
-                )}
-              </div>
-
-              {/* Manual Backup Trigger Zone */}
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl gap-3">
-                <div className="text-[11px] font-medium text-slate-700">
-                  수동으로 즉시 암호화 후 클라우드 백업 스냅샷을 즉시 업로드합니다:
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSaveServerBackupManual}
-                  disabled={serverBackupsLoading}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg transition-all cursor-pointer shadow-sm flex items-center gap-1 font-sans"
-                >
-                  <CloudUpload className="w-3.5 h-3.5 animate-bounce" />
-                  <span>수동 백업 전송</span>
-                </button>
-              </div>
-
-              <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
-                {serverBackupsLoading && serverBackups.length === 0 ? (
-                  <div className="text-center py-10 text-slate-500 text-xs flex flex-col items-center gap-2">
-                    <RefreshCw className="w-5 h-5 animate-spin text-indigo-500" />
-                    <span>서버에서 보안 클라우드 백업 목록을 요청하는 중...</span>
-                  </div>
-                ) : serverBackupsError ? (
-                  <div className="text-center py-10 text-rose-500 text-xs bg-rose-50 border border-rose-100 rounded-xl">
-                    서버 백업을 조회하지 못했습니다: {serverBackupsError}
-                  </div>
-                ) : serverBackups.length === 0 ? (
-                  <div className="text-center py-12 border border-dashed border-slate-200 rounded-xl text-slate-400 text-xs leading-relaxed">
-                    클라우드 서버에 등록된 보안 암호 백업이 없습니다.<br />
-                    계좌, 자산, 환율 변경 시 800ms 후 보안 클라우드 수동/자동 백업이 자동으로 안전하게 서버에 적립됩니다.
-                  </div>
-                ) : (
-                  serverBackups.map((item, idx) => {
-                    const timestampNum = Number(item.timestamp);
-                    const date = new Date(timestampNum);
-                    const dateStr = isNaN(date.getTime()) 
-                      ? '일시 확인 불가' 
-                      : date.toLocaleString('ko-KR', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit'
-                        });
-
-                    return (
-                      <div key={item.fileName} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100/50 border border-slate-200/80 rounded-xl transition-all gap-3 shadow-2xs">
-                        <div className="flex items-start gap-2.5 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-150/50 flex items-center justify-center shrink-0 mt-0.5">
-                            <Cloud className="w-4 h-4 text-indigo-500" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5 flex-wrap">
-                              <span>보안 백업 #{serverBackups.length - idx}</span>
-                              <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-1.5 py-0.2 rounded-full text-[9px] font-medium font-mono">AES-GCM 256</span>
-                            </div>
-                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">{dateStr}</div>
-                            <div className="text-[10px] text-slate-500 font-medium mt-0.5">
-                              보관 자산계좌 {item.accountsCount || 0}개 안전 보관 ({Math.round(item.size / 10.24) / 100} KB)
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0 font-sans">
-                          <button
-                            onClick={() => handleRestoreServerBackup(item)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] sm:text-[11px] font-bold py-1 px-2.5 rounded-md transition-all cursor-pointer shadow-sm flex items-center gap-1"
-                            title="암호 복사본 해독 후 현재 상태 대시보드로 복제"
-                          >
-                            <CloudDownload className="w-3 h-3" />
-                            <span>복원</span>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteServerBackup(item.fileName)}
-                            className="bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 text-[10px] sm:text-[11px] font-bold py-1 px-2 rounded-md border border-rose-100/60 transition-all cursor-pointer flex items-center gap-1"
-                            title="삭제"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            <span>삭제</span>
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* Footer Sentinel Log */}
-            <div className="bg-slate-50 px-6 py-4 border-t border-slate-150/70 flex justify-between items-center text-[10px] text-slate-400 font-mono">
-              <span className="flex items-center gap-1 text-slate-500">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                WealthGuard Zero-Knowledge Cloud Storage v3
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsAutoBackupModalOpen(false)}
-                className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs py-1.5 px-3.5 rounded-lg transition-all cursor-pointer font-sans"
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
