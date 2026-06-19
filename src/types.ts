@@ -1,4 +1,4 @@
-export type AssetCategory = '국내주식' | '해외주식' | '단기채' | '금은' | '현금';
+export type AssetCategory = '국내주식' | '해외주식' | '단기채' | '금은' | '현금' | 'ETF';
 
 export interface StockItem {
   id: string;

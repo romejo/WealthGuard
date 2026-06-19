@@ -470,6 +470,7 @@ export default function AccountTable({
                       >
                         <option value="국내주식">국내주식</option>
                         <option value="해외주식">해외주식</option>
+                        <option value="ETF">ETF</option>
                         <option value="단기채">단기채</option>
                         <option value="금은">금은</option>
                         <option value="현금">현금</option>
@@ -753,6 +754,7 @@ export default function AccountTable({
                     >
                       <option value="국내주식">국내주식</option>
                       <option value="해외주식">해외주식</option>
+                      <option value="ETF">ETF</option>
                       <option value="단기채">단기채</option>
                       <option value="금은">금은</option>
                       <option value="현금">현금</option>
@@ -1044,6 +1046,7 @@ export default function AccountTable({
                   >
                     <option value="국내주식">국내주식</option>
                     <option value="해외주식">해외주식</option>
+                    <option value="ETF">ETF</option>
                     <option value="단기채">단기채</option>
                     <option value="금은">금은</option>
                     <option value="현금">현금</option>

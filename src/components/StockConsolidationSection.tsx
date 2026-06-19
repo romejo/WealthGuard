@@ -208,7 +208,7 @@ export default function StockConsolidationSection({ accounts, exchangeRate, onUp
   };
 
   // Distinct Categories for badges
-  const categoriesList = ['All', '국내주식', '해외주식', '단기채', '금은', '현금'];
+  const categoriesList = ['All', '국내주식', '해외주식', 'ETF', '단기채', '금은', '현금'];
 
   // Cash computations
   const totalCashKRW = filteredAccounts.reduce((sum, acc) => sum + (acc.cash || 0), 0);
@@ -448,6 +448,7 @@ export default function StockConsolidationSection({ accounts, exchangeRate, onUp
                 let categoryColorClass = "bg-slate-50 text-slate-600 border-slate-200";
                 if (cs.category === '국내주식') categoryColorClass = "bg-sky-50 text-sky-700 border-sky-100";
                 else if (cs.category === '해외주식') categoryColorClass = "bg-violet-50 text-violet-700 border-violet-100";
+                else if (cs.category === 'ETF') categoryColorClass = "bg-emerald-50 text-emerald-700 border-emerald-100";
                 else if (cs.category === '단기채') categoryColorClass = "bg-amber-50 text-amber-700 border-amber-100";
                 else if (cs.category === '금은') categoryColorClass = "bg-orange-50 text-orange-700 border-orange-100";
                 else if (cs.category === '현금') categoryColorClass = "bg-teal-50 text-teal-700 border-teal-100";

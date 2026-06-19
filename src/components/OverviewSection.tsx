@@ -1174,10 +1174,11 @@ export default function OverviewSection({
   const totalReturnPercent = totalPurchaseSum === 0 ? 0 : (totalProfitLossSum / totalPurchaseSum) * 100;
 
   // 2. Classify Assets for Pie Chart
-  // Categories: 국내주식, 해외주식, 단기채, 금은, 현금
+  // Categories: 국내주식, 해외주식, ETF, 단기채, 금은, 현금
   const categoryTotals: Record<AssetCategory, number> = {
     '국내주식': 0,
     '해외주식': 0,
+    'ETF': 0,
     '단기채': 0,
     '금은': 0,
     '현금': 0,
@@ -1190,7 +1191,9 @@ export default function OverviewSection({
       const normName = s.name.toLowerCase().trim();
       const isMMActive = normName.includes('머니마켓액티브') || normName.includes('머니마켓엑티브');
       
-      if (s.category === '현금' || s.category === '단기채' || isMMActive) {
+      if (s.category === 'ETF') {
+        categoryTotals['ETF'] += valuationAmount;
+      } else if (s.category === '현금' || s.category === '단기채' || isMMActive) {
         categoryTotals['현금'] += valuationAmount;
       } else {
         categoryTotals[s.category] += valuationAmount;
@@ -1206,12 +1209,13 @@ export default function OverviewSection({
       value: Math.round(value),
       percentage: totalValuationSum === 0 ? 0 : (value / totalValuationSum) * 100,
     }))
-    .filter((d) => d.value > 0);
+    .filter((d) => d.value > 0 && d.percentage >= 0.05); // Filter out 0% or close-to-zero percentage items entirely from pie chart & listing
 
   // Map colors to match the user's uploaded chart
   const categoryColors: Record<AssetCategory | string, string> = {
     '국내주식': '#3b82f6', // Premium Blue
     '해외주식': '#f97316', // Bright Orange
+    'ETF': '#10b981', // Crisp Emerald Green
     '단기채': '#a1a1aa', // Slate Grey
     '금은': '#eab308', // Shiny gold/silver yellow
     '현금': '#60a5fa', // Vivid cyan/soft blue

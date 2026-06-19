@@ -235,7 +235,9 @@ interface AssetTrendItem {
   date: string;
   국내주식: number;
   해외주식: number;
+  ETF?: number;
   금은: number;
+  text?: string;
   현금: number;
 }
 
@@ -246,21 +248,21 @@ interface AssetTrendSectionProps {
 }
 
 const DEFAULT_TREND_DATA: AssetTrendItem[] = [
-  { date: "06월 05일", 국내주식: 170491680, 해외주식: 22434819, 금은: 33562580, 현금: 90188105 },
-  { date: "06월 06일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 07일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 08일", 국내주식: 189918650, 해외주식: 21396806, 금은: 32016140, 현금: 55587600 },
-  { date: "06월 09일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 10일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 11일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 12일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 13일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 14일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 15일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 16일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 17일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 18일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-  { date: "06월 19일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 }
+  { date: "06월 05일", 국내주식: 170491680, 해외주식: 22434819, ETF: 0, 금은: 33562580, 현금: 90188105 },
+  { date: "06월 06일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 07일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 08일", 국내주식: 189918650, 해외주식: 21396806, ETF: 0, 금은: 32016140, 현금: 55587600 },
+  { date: "06월 09일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 10일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 11일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 12일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 13일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 14일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 15일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 16일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 17일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 18일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 },
+  { date: "06월 19일", 국내주식: 0, 해외주식: 0, ETF: 0, 금은: 0, 현금: 0 }
 ];
 
 export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrendSectionProps) {
@@ -305,6 +307,7 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
     const totals = {
       국내주식: 0,
       해외주식: 0,
+      ETF: 0,
       금은: 0,
       현금: 0
     };
@@ -316,7 +319,9 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
         const normName = s.name.toLowerCase().trim();
         const isMMActive = normName.includes('머니마켓액티브') || normName.includes('머니마켓엑티브');
         
-        if (s.category === '현금' || s.category === '단기채' || isMMActive) {
+        if (s.category === 'ETF') {
+          totals.ETF += val;
+        } else if (s.category === '현금' || s.category === '단기채' || isMMActive) {
           totals.현금 += val;
         } else if (s.category === '국내주식' || s.category === '해외주식' || s.category === '금은') {
           totals[s.category] += val;
@@ -328,13 +333,14 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
     return {
       국내주식: Math.round(totals.국내주식),
       해외주식: Math.round(totals.해외주식),
+      ETF: Math.round(totals.ETF),
       금은: Math.round(totals.금은),
       현금: Math.round(totals.현금)
     };
   };
 
   const liveTotals = getLiveTotals();
-  const totalLiveValuation = liveTotals.국내주식 + liveTotals.해외주식 + liveTotals.금은 + liveTotals.현금;
+  const totalLiveValuation = liveTotals.국내주식 + liveTotals.해외주식 + (liveTotals.ETF || 0) + liveTotals.금은 + liveTotals.현금;
 
   // Helper to get formatted current date label (e.g. "06월 05일")
   const getCurDateLabel = () => {
@@ -366,6 +372,7 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
             if (
               item.국내주식 !== liveTotals.국내주식 ||
               item.해외주식 !== liveTotals.해외주식 ||
+              item.ETF !== liveTotals.ETF ||
               item.금은 !== liveTotals.금은 ||
               item.현금 !== liveTotals.현금
             ) {
@@ -374,6 +381,7 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
                 ...item,
                 국내주식: liveTotals.국내주식,
                 해외주식: liveTotals.해외주식,
+                ETF: liveTotals.ETF,
                 금은: liveTotals.금은,
                 현금: liveTotals.현금
               };
@@ -389,6 +397,7 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
           date: curDateLabel,
           국내주식: liveTotals.국내주식,
           해외주식: liveTotals.해외주식,
+          ETF: liveTotals.ETF,
           금은: liveTotals.금은,
           현금: liveTotals.현금
         };
@@ -398,23 +407,25 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
       localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(nextData));
       return nextData;
     });
-  }, [liveTotals.국내주식, liveTotals.해외주식, liveTotals.금은, liveTotals.현금, curDateLabel]);
+  }, [liveTotals.국내주식, liveTotals.해외주식, liveTotals.ETF, liveTotals.금은, liveTotals.현금, curDateLabel]);
 
   // Convert to chart display units (만원)
   const chartFormatData = trendData.map((item, idx) => {
-    const total = item.국내주식 + item.해외주식 + item.금은 + item.현금;
+    const total = item.국내주식 + item.해외주식 + (item.ETF || 0) + item.금은 + item.현금;
     
     const korStock = Math.round(item.국내주식 / 10000);
     const forStock = Math.round(item.해외주식 / 10000);
+    const etf = Math.round((item.ETF || 0) / 10000);
     const goldSilver = Math.round(item.금은 / 10000);
     const cash = Math.round(item.현금 / 10000);
 
-    const total_val = korStock + forStock + goldSilver + cash;
+    const total_val = korStock + forStock + etf + goldSilver + cash;
 
     const formatted: any = {
       date: item.date,
       '국내주식': korStock,
       '해외주식': forStock,
+      'ETF': etf,
       '금은': goldSilver,
       '현금': cash,
       totalKRW: total,
@@ -428,7 +439,7 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
     let decreaseLabel = '';
     if (idx > 0) {
       const prevItem = trendData[idx - 1];
-      const prevTotal = prevItem.국내주식 + prevItem.해외주식 + prevItem.금은 + prevItem.현금;
+      const prevTotal = prevItem.국내주식 + prevItem.해외주식 + (prevItem.ETF || 0) + prevItem.금은 + prevItem.현금;
       if (prevTotal > 0 && total > 0) {
         total_changeAmount = total - prevTotal; // in KRW
         total_changeRate = (total_changeAmount / prevTotal) * 100;
@@ -447,24 +458,27 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
     if (total > 0) {
       formatted['국내주식_weight'] = (item.국내주식 / total) * 100;
       formatted['해외주식_weight'] = (item.해외주식 / total) * 100;
+      formatted['ETF_weight'] = ((item.ETF || 0) / total) * 100;
       formatted['금은_weight'] = (item.금은 / total) * 100;
       formatted['현금_weight'] = (item.현금 / total) * 100;
     } else {
       formatted['국내주식_weight'] = 0;
       formatted['해외주식_weight'] = 0;
+      formatted['ETF_weight'] = 0;
       formatted['금은_weight'] = 0;
       formatted['현금_weight'] = 0;
     }
 
     // Midpoint calculations in '만원' for Line Chart connection dots center placement
-    // stacked order bottom-to-top: 국내주식 -> 해외주식 -> 금은 -> 현금
+    // stacked order bottom-to-top: 국내주식 -> 해외주식 -> ETF -> 금은 -> 현금
     formatted['국내주식_mid'] = korStock / 2;
     formatted['해외주식_mid'] = korStock + (forStock / 2);
-    formatted['금은_mid'] = korStock + forStock + (goldSilver / 2);
-    formatted['현금_mid'] = korStock + forStock + goldSilver + (cash / 2);
+    formatted['ETF_mid'] = korStock + forStock + (etf / 2);
+    formatted['금은_mid'] = korStock + forStock + etf + (goldSilver / 2);
+    formatted['현금_mid'] = korStock + forStock + etf + goldSilver + (cash / 2);
 
     // Calculate percent change relative to the previous day
-    ['국내주식', '해외주식', '금은', '현금'].forEach(cat => {
+    ['국내주식', '해외주식', 'ETF', '금은', '현금'].forEach(cat => {
       if (idx > 0) {
         const prevVal = trendData[idx - 1][cat as keyof AssetTrendItem] as number || 0;
         const curVal = item[cat as keyof AssetTrendItem] as number || 0;
@@ -487,6 +501,7 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
   const categoryColors = {
     '국내주식': '#3b82f6', // Premium Blue
     '해외주식': '#f97316', // Bright Orange
+    'ETF': '#10b981', // Crisp Emerald Green
     '금은': '#eab308', // Shiny gold
     '현금': '#60a5fa'  // Azure blue
   };
@@ -577,6 +592,7 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
             <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc/60' }} />
             <Bar dataKey="국내주식" stackId="asset-stack" fill={categoryColors['국내주식']} maxBarSize={45} />
             <Bar dataKey="해외주식" stackId="asset-stack" fill={categoryColors['해외주식']} maxBarSize={45} />
+            <Bar dataKey="ETF" stackId="asset-stack" fill={categoryColors['ETF']} maxBarSize={45} />
             <Bar dataKey="금은" stackId="asset-stack" fill={categoryColors['금은']} maxBarSize={45} />
             <Bar dataKey="현금" stackId="asset-stack" fill={categoryColors['현금']} maxBarSize={45} />
 
@@ -595,6 +611,7 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
             {/* Overlaid Trend Lines with Connected Dots and Daily Share Weights */}
             <Line type="monotone" dataKey="국내주식_mid" stroke="#1d4ed8" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#1d4ed8" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="국내주식_mid" data={chartFormatData} />} legendType="none" />
             <Line type="monotone" dataKey="해외주식_mid" stroke="#ea580c" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#ea580c" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="해외주식_mid" data={chartFormatData} />} legendType="none" />
+            <Line type="monotone" dataKey="ETF_mid" stroke="#10b981" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#10b981" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="ETF_mid" data={chartFormatData} />} legendType="none" />
             <Line type="monotone" dataKey="금은_mid" stroke="#ca8a04" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#ca8a04" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="금은_mid" data={chartFormatData} />} legendType="none" />
             <Line type="monotone" dataKey="현금_mid" stroke="#2563eb" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#2563eb" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="현금_mid" data={chartFormatData} />} legendType="none" />
           </ComposedChart>
