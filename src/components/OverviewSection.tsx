@@ -231,7 +231,7 @@ const TotalAssetCustomizedLabel = (props: any) => {
 };
 
 const AssetCustomizedLabel = (props: any) => {
-  const { x, y, index, data, dataKey, payload } = props;
+  const { x, y, index, data, dataKey, payload, itemsList } = props;
   if (x === undefined || y === undefined || !dataKey) return null;
 
   // Only display on the last day's bar graph to prevent label repetition and overlapping
@@ -273,8 +273,6 @@ const AssetCustomizedLabel = (props: any) => {
     changeRate = props[`${categoryClean}_changeRate`];
   }
 
-  if (changeAmount === undefined || changeAmount === null || isNaN(changeAmount)) return null;
-
   // Verify that the segment/item itself has valuation on this day
   let currentVal = 0;
   if (data && index !== undefined && data[index]) {
@@ -283,8 +281,8 @@ const AssetCustomizedLabel = (props: any) => {
     currentVal = payload[categoryClean] || 0;
   }
   
-  // Hide label if position value is 0 or extremely small (< 40만) to prevent overlapping in crowded charts
-  if (currentVal < 40) return null;
+  // 1만 원 미만의 극히 작은 dust assets 는 노이즈 제거를 위해 숨김
+  if (currentVal < 1) return null;
 
   const formatAmountChange = (changeInWon: number) => {
     if (changeInWon === 0) return '0';
@@ -312,40 +310,112 @@ const AssetCustomizedLabel = (props: any) => {
     }
   };
 
-  let displayText = formatAmountChange(changeAmount);
-  if (changeRate !== undefined && changeRate !== null && !isNaN(changeRate)) {
-    const isPositiveRate = changeRate > 0;
-    const signRate = isPositiveRate ? '+' : '';
-    displayText += ` (${signRate}${changeRate.toFixed(1)}%)`;
+  let displayText = '';
+  if (changeAmount !== undefined && changeAmount !== null && !isNaN(changeAmount) && changeAmount !== 0) {
+    displayText = formatAmountChange(changeAmount);
+    if (changeRate !== undefined && changeRate !== null && !isNaN(changeRate)) {
+      const isPositiveRate = changeRate > 0;
+      const signRate = isPositiveRate ? '+' : '';
+      displayText += ` (${signRate}${changeRate.toFixed(1)}%)`;
+    }
+  } else {
+    displayText = `₩${Math.round(currentVal).toLocaleString()}만`;
   }
 
   const containerWidth = props.viewBox?.width || props.width || 0;
-  let labelX = x;
+  const lastIndex = data.length - 1;
+  const lastDay = data[lastIndex];
+
+  // Resolve active items on the last day based on supplied itemsList
+  const activeItems = (itemsList || []).filter((name: string) => (lastDay[name] || 0) >= 1);
+  const activeIdx = activeItems.indexOf(categoryClean);
+  if (activeIdx === -1) return null;
+
+  // Alternate zigzag placement: left versus right
+  const isLeft = activeIdx % 2 === 0;
+
+  // Calibrate Y axis scale using current pixel coordinate vs midpoint value ratio
+  const currentMidVal = lastDay[`${categoryClean}_mid`] || 0;
+  const chartHeight = props.viewBox?.height || 300;
+  const chartY = props.viewBox?.y || 52;
+  const ratio = 1 - (y - chartY) / chartHeight;
+
+  const getPixelY = (val: number) => {
+    if (currentMidVal > 0 && ratio > 0.05) {
+      const calibratedMaxY = currentMidVal / ratio;
+      return chartY + (1 - val / calibratedMaxY) * chartHeight;
+    }
+    const maxTotalVal = Math.max(...data.map((d: any) => d.total_val || 0));
+    const fallbackMaxY = maxTotalVal * 1.15;
+    return chartY + (1 - val / fallbackMaxY) * chartHeight;
+  };
+
+  // Run 1D Spacing layout sweep-and-prune for same side items only
+  const sideItems = activeItems.filter((_, idx) => (idx % 2 === activeIdx % 2));
+  const sidePositions = sideItems.map(name => ({
+    name,
+    y: getPixelY(lastDay[`${name}_mid`] || 0)
+  }));
+
+  // Sort top-to-bottom of screen (ascending pixel y coordinates)
+  sidePositions.sort((a, b) => a.y - b.y);
+
+  const minGap = 17;
+  
+  // Forward sweep (push down)
+  for (let i = 1; i < sidePositions.length; i++) {
+    if (sidePositions[i].y < sidePositions[i - 1].y + minGap) {
+      sidePositions[i].y = sidePositions[i - 1].y + minGap;
+    }
+  }
+  // Backward sweep (push up)
+  for (let i = sidePositions.length - 2; i >= 0; i--) {
+    if (sidePositions[i].y > sidePositions[i + 1].y - minGap) {
+      sidePositions[i].y = sidePositions[i + 1].y - minGap;
+    }
+  }
+
+  const found = sidePositions.find(item => item.name === categoryClean);
+  const adjustedY = found ? found.y : y;
+  const labelY = Math.max(16, adjustedY);
+
+  const offsetDistance = 12;
+  let labelX = isLeft ? x - offsetDistance : x + offsetDistance;
+
   if (containerWidth > 0) {
     const minX = 42;
     const maxX = containerWidth - 42;
-    labelX = Math.max(minX, Math.min(maxX, x));
+    labelX = Math.max(minX, Math.min(maxX, labelX));
   } else {
-    labelX = Math.max(42, x);
+    labelX = Math.max(42, labelX);
   }
 
-  const labelY = Math.max(22, y);
-
-  const labelText = `${displayName} ${displayText}`;
-
   return (
-    <text
-      x={labelX}
-      y={labelY - 18}
-      fill="#000000"
-      fontSize={9}
-      fontWeight="800"
-      fontFamily="sans-serif"
-      textAnchor="middle"
-      style={{ textShadow: '0 2px 4px rgba(255, 255, 255, 1), -1px -1px 0px rgba(255,255,255,1), 1px -1px 0px rgba(255,255,255,1), -1px 1px 0px rgba(255,255,255,1), 1px 1px 0px rgba(255,255,255,1)' }}
-    >
-      {labelText}
-    </text>
+    <g>
+      {/* 텍스트와 중심점을 잇는 대쉬 구조 가이드선 */}
+      <line 
+        x1={x} 
+        y1={y} 
+        x2={isLeft ? x - 10 : x + 10} 
+        y2={labelY} 
+        stroke="#94a3b8" 
+        strokeWidth={0.8} 
+        strokeDasharray="2 2"
+      />
+      <text
+        x={labelX}
+        y={labelY - 5}
+        fill="#1e293b"
+        fontSize={8.5}
+        fontWeight="bold"
+        fontFamily="sans-serif"
+        textAnchor={isLeft ? "end" : "start"}
+        style={{ textShadow: '0 2px 4px rgba(255, 255, 255, 1), -1.5px -1.5px 0px rgba(255,255,255,1), 1.5px -1.5px 0px rgba(255,255,255,1), -1.5px 1.5px 0px rgba(255,255,255,1), 1.5px 1.5px 0px rgba(255,255,255,1)' }}
+      >
+        <tspan x={labelX} fontWeight="bold">{displayName}</tspan>
+        <tspan x={labelX} dy="1.15em" fontSize={7.5} fill="#475569" fontWeight="medium">{displayText}</tspan>
+      </text>
+    </g>
   );
 };
 
@@ -424,6 +494,9 @@ export default function OverviewSection({
       valuation: accValuation,
     });
   });
+
+  // 현재 가치(valuation) 기준 오름차순 정렬하여, 비중이 작은 계좌가 아래에 먼저 쌓이도록 보장
+  segments.sort((a, b) => a.valuation - b.valuation);
 
   // Daily Account-Level Trend Storage
   const [accountTrends, setAccountTrends] = useState<any[]>(() => {
@@ -987,26 +1060,11 @@ export default function OverviewSection({
     // Third-priority: Short-term CMA/Money Market like Tiger 머니마켓액티브 (Category: 현금) -> Rank 30
     // Fourth-priority (top of chart): Equities like HANARO 원자력iSelect, Tiger 반도체TOP10, SK하이닉스 (Category: 국내주식/해외주식) -> Rank 40
     
-    const getItemRank = (itemName: string, isCash: boolean): number => {
-      if (isCash || itemName === '예수금(현금)' || itemName === '달러') {
-        return 10;
-      }
-      const known = KNOWN_STOCKS[itemName];
-      if (known) {
-        if (known.category === '금은') return 20;
-        if (known.category === '현금') return 30;
-        if (known.category === '국내주식' || known.category === '해외주식') return 40;
-      }
-      return 40; // fallback for newly added custom stocks that default to equities/stocks
-    };
-
+    // 비중(가치)이 작은 종목을 아래로 놓고 (오름차순 정렬)
     items.sort((a, b) => {
-      const rankA = getItemRank(a.name, a.isCash);
-      const rankB = getItemRank(b.name, b.isCash);
-      if (rankA !== rankB) {
-        return rankA - rankB;
+      if (a.currentValuation !== b.currentValuation) {
+        return a.currentValuation - b.currentValuation;
       }
-      // If same rank, preserve alphabetical or original order to be deterministic
       return a.name.localeCompare(b.name);
     });
 
@@ -1463,7 +1521,7 @@ export default function OverviewSection({
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
           {/* Chart Area */}
-          <div className="xl:col-span-9 h-[480px] sm:h-[540px] w-full relative">
+          <div className="xl:col-span-10 h-[480px] sm:h-[540px] w-full relative">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart 
                 data={selectedSegment ? portfolioChartData : accountChartData} 
@@ -1509,17 +1567,23 @@ export default function OverviewSection({
                 {(selectedSegment 
                   ? getSegmentPortfolioItems(selectedSegment).map((item) => ({ name: item.name }))
                   : segments.map((seg) => ({ name: seg.name }))
-                ).map((barItem, idx) => (
+                ).map((barItem, idx, arr) => (
                   <Line 
                     key={`${barItem.name}_mid`}
                     type="monotone"
                     dataKey={`${barItem.name}_mid`}
                     stroke={getSegmentColor(barItem.name, idx)}
-                    strokeWidth={selectedSegment ? 0 : 1.2}
-                    strokeOpacity={selectedSegment ? 0 : 0.6}
-                    dot={selectedSegment ? false : { r: 2.5, fill: getSegmentColor(barItem.name, idx) }}
-                    activeDot={selectedSegment ? false : { r: 4 }}
-                    label={<AssetCustomizedLabel dataKey={`${barItem.name}_mid`} data={selectedSegment ? portfolioChartData : accountChartData} />}
+                    strokeWidth={1.2}
+                    strokeOpacity={0.6}
+                    dot={{ r: 2.5, fill: getSegmentColor(barItem.name, idx) }}
+                    activeDot={{ r: 4 }}
+                    label={
+                      <AssetCustomizedLabel 
+                        dataKey={`${barItem.name}_mid`} 
+                        data={selectedSegment ? portfolioChartData : accountChartData} 
+                        itemsList={arr.map(item => item.name)} 
+                      />
+                    }
                     legendType="none"
                   />
                 ))}
@@ -1528,7 +1592,7 @@ export default function OverviewSection({
           </div>
 
           {/* Real-time Changes Stats Cards Container */}
-          <div className="xl:col-span-3 space-y-2.5">
+          <div className="xl:col-span-2 space-y-2.5">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">계좌별 전일 대비 증감 (Daily Delta)</span>
             <div className="grid grid-cols-1 gap-2 border-l border-slate-100 pl-1">
               {segments.map((seg, idx) => {
@@ -1543,31 +1607,35 @@ export default function OverviewSection({
                     key={seg.name}
                     id={`seg-delta-button-${seg.name}`}
                     onClick={() => setSelectedSegment(seg.name)}
-                    className={`w-full text-left flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
+                    className={`w-full text-left flex flex-col sm:flex-row xl:flex-col gap-1.5 p-2 rounded-xl border transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-indigo-50 border-indigo-400 ring-2 ring-indigo-400/20 shadow-md'
                         : 'bg-slate-50 border border-slate-150 hover:bg-slate-50 hover:border-slate-300 shadow-[0_1px_2px_rgba(0,0,0,0.01)] hover:shadow-sm'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                      <span className={`text-xs font-semibold ${isSelected ? 'text-indigo-900 font-bold' : 'text-slate-700'}`}>
-                        {seg.name}
-                      </span>
-                    </div>
-                    <div className="text-right flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-900">
+                    <div className="flex items-center gap-1.5 w-full justify-between sm:justify-start xl:justify-between">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ backgroundColor: color }} />
+                        <span className={`text-[11px] font-bold truncate ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
+                          {seg.name}
+                        </span>
+                      </div>
+                      <span className="font-mono text-[11px] font-bold text-slate-900 shrink-0">
                         ₩{Math.round(seg.valuation).toLocaleString()}
                       </span>
+                    </div>
+                    
+                    <div className="flex items-center xl:self-end justify-between sm:justify-end xl:justify-end w-full sm:w-auto xl:w-full">
+                      <span className="sm:hidden xl:hidden text-[9px] text-slate-400">전일대비:</span>
                       {change !== 0 ? (
-                        <div className={`flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-extrabold ${
+                        <div className={`flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-bold ${
                           isPositive ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'
                         }`}>
-                          {isPositive ? <TrendingUp className="w-3 h-3 text-rose-500" /> : <TrendingDown className="w-3 h-3 text-blue-500" />}
+                          {isPositive ? <TrendingUp className="w-2.5 h-2.5 text-rose-500" /> : <TrendingDown className="w-2.5 h-2.5 text-blue-500" />}
                           <span>{isPositive ? '+' : ''}{Math.round(change/10000).toLocaleString()}만 ({isPositive ? '+' : ''}{percent.toFixed(1)}%)</span>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded font-mono">-</span>
+                        <span className="text-[9px] text-slate-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded font-mono">-</span>
                       )}
                     </div>
                   </button>

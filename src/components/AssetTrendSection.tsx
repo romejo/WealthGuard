@@ -4,7 +4,7 @@ import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 import { Calendar, BarChart2, Coins } from 'lucide-react';
 
 const AssetCustomizedLabel = (props: any) => {
-  const { x, y, index, data, dataKey, payload } = props;
+  const { x, y, index, data, dataKey, payload, itemsList } = props;
   if (x === undefined || y === undefined || !dataKey) return null;
 
   // Only display on the last day's bar graph to prevent label repetition and overlapping
@@ -36,8 +36,6 @@ const AssetCustomizedLabel = (props: any) => {
     changeRate = props[`${categoryClean}_changeRate`];
   }
 
-  if (changeAmount === undefined || changeAmount === null || isNaN(changeAmount)) return null;
-
   // Verify that the level itself has valuation
   let currentVal = 0;
   if (data && index !== undefined && data[index]) {
@@ -46,8 +44,8 @@ const AssetCustomizedLabel = (props: any) => {
     currentVal = payload[categoryClean] || 0;
   }
   
-  // Hide label if position value is extremely small (< 40만) to prevent clashing text
-  if (currentVal < 40) return null;
+  // Hide label if position value is extremely small (< 1만) to prevent clashing text
+  if (currentVal < 1) return null;
 
   const formatAmountChange = (changeInWon: number) => {
     if (changeInWon === 0) return '0';
@@ -74,11 +72,16 @@ const AssetCustomizedLabel = (props: any) => {
     }
   };
 
-  let displayText = formatAmountChange(changeAmount);
-  if (changeRate !== undefined && changeRate !== null && !isNaN(changeRate)) {
-    const isPositiveRate = changeRate > 0;
-    const signRate = isPositiveRate ? '+' : '';
-    displayText += ` (${signRate}${changeRate.toFixed(1)}%)`;
+  let displayText = '';
+  if (changeAmount !== undefined && changeAmount !== null && !isNaN(changeAmount) && changeAmount !== 0) {
+    displayText = formatAmountChange(changeAmount);
+    if (changeRate !== undefined && changeRate !== null && !isNaN(changeRate)) {
+      const isPositiveRate = changeRate > 0;
+      const signRate = isPositiveRate ? '+' : '';
+      displayText += ` (${signRate}${changeRate.toFixed(1)}%)`;
+    }
+  } else {
+    displayText = `₩${Math.round(currentVal).toLocaleString()}만`;
   }
 
   let displayName = categoryClean;
@@ -86,32 +89,98 @@ const AssetCustomizedLabel = (props: any) => {
   if (categoryClean === '해외주식') displayName = '해외';
 
   const containerWidth = props.viewBox?.width || props.width || 0;
-  let labelX = x;
+  const lastIndex = data.length - 1;
+  const lastDay = data[lastIndex];
+
+  // Resolve active items on the last day based on supplied itemsList
+  const activeItems = (itemsList || ['국내주식', '해외주식', 'ETF', '금은', '현금']).filter((name: string) => (lastDay[name] || 0) >= 1);
+  const activeIdx = activeItems.indexOf(categoryClean);
+  if (activeIdx === -1) return null;
+
+  // Alternate zigzag placement: left versus right
+  const isLeft = activeIdx % 2 === 0;
+
+  // Calibrate Y axis scale using current pixel coordinate vs midpoint value ratio
+  const currentMidVal = lastDay[`${categoryClean}_mid`] || 0;
+  const chartHeight = props.viewBox?.height || 300;
+  const chartY = props.viewBox?.y || 52;
+  const ratio = 1 - (y - chartY) / chartHeight;
+
+  const getPixelY = (val: number) => {
+    if (currentMidVal > 0 && ratio > 0.05) {
+      const calibratedMaxY = currentMidVal / ratio;
+      return chartY + (1 - val / calibratedMaxY) * chartHeight;
+    }
+    const maxTotalVal = Math.max(...data.map((d: any) => d.total_val || 0));
+    const fallbackMaxY = maxTotalVal * 1.15;
+    return chartY + (1 - val / fallbackMaxY) * chartHeight;
+  };
+
+  // Run 1D Spacing layout sweep-and-prune for same side items only
+  const sideItems = activeItems.filter((_, idx) => (idx % 2 === activeIdx % 2));
+  const sidePositions = sideItems.map(name => ({
+    name,
+    y: getPixelY(lastDay[`${name}_mid`] || 0)
+  }));
+
+  // Sort top-to-bottom of screen (ascending pixel y coordinates)
+  sidePositions.sort((a, b) => a.y - b.y);
+
+  const minGap = 17;
+  
+  // Forward sweep (push down)
+  for (let i = 1; i < sidePositions.length; i++) {
+    if (sidePositions[i].y < sidePositions[i - 1].y + minGap) {
+      sidePositions[i].y = sidePositions[i - 1].y + minGap;
+    }
+  }
+  // Backward sweep (push up)
+  for (let i = sidePositions.length - 2; i >= 0; i--) {
+    if (sidePositions[i].y > sidePositions[i + 1].y - minGap) {
+      sidePositions[i].y = sidePositions[i + 1].y - minGap;
+    }
+  }
+
+  const found = sidePositions.find(item => item.name === categoryClean);
+  const adjustedY = found ? found.y : y;
+  const labelY = Math.max(16, adjustedY);
+
+  const offsetDistance = 12;
+  let labelX = isLeft ? x - offsetDistance : x + offsetDistance;
+
   if (containerWidth > 0) {
     const minX = 42;
     const maxX = containerWidth - 42;
-    labelX = Math.max(minX, Math.min(maxX, x));
+    labelX = Math.max(minX, Math.min(maxX, labelX));
   } else {
-    labelX = Math.max(42, x);
+    labelX = Math.max(42, labelX);
   }
 
-  const labelY = Math.max(22, y);
-
-  const labelText = `${displayName} ${displayText}`;
-
   return (
-    <text
-      x={labelX}
-      y={labelY - 18}
-      fill="#000000"
-      fontSize={9}
-      fontWeight="800"
-      fontFamily="sans-serif"
-      textAnchor="middle"
-      style={{ textShadow: '0 2px 4px rgba(255, 255, 255, 1), -1px -1px 0px rgba(255,255,255,1), 1px -1px 0px rgba(255,255,255,1), -1px 1px 0px rgba(255,255,255,1), 1px 1px 0px rgba(255,255,255,1)' }}
-    >
-      {labelText}
-    </text>
+    <g>
+      <line 
+        x1={x} 
+        y1={y} 
+        x2={isLeft ? x - 10 : x + 10} 
+        y2={labelY} 
+        stroke="#94a3b8" 
+        strokeWidth={0.8} 
+        strokeDasharray="2 2"
+      />
+      <text
+        x={labelX}
+        y={labelY - 5}
+        fill="#1e293b"
+        fontSize={8.5}
+        fontWeight="bold"
+        fontFamily="sans-serif"
+        textAnchor={isLeft ? "end" : "start"}
+        style={{ textShadow: '0 2px 4px rgba(255, 255, 255, 1), -1.5px -1.5px 0px rgba(255,255,255,1), 1.5px -1.5px 0px rgba(255,255,255,1), -1.5px 1.5px 0px rgba(255,255,255,1), 1.5px 1.5px 0px rgba(255,255,255,1)' }}
+      >
+        <tspan x={labelX} fontWeight="bold">{displayName}</tspan>
+        <tspan x={labelX} dy="1.15em" fontSize={7.5} fill="#475569" fontWeight="medium">{displayText}</tspan>
+      </text>
+    </g>
   );
 };
 
@@ -504,11 +573,11 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
 
     // Midpoint calculations in '만원' for Line Chart connection dots center placement
     // stacked order bottom-to-top: 국내주식 -> 해외주식 -> ETF -> 금은 -> 현금
-    formatted['국내주식_mid'] = korStock / 2;
-    formatted['해외주식_mid'] = korStock + (forStock / 2);
-    formatted['ETF_mid'] = korStock + forStock + (etf / 2);
-    formatted['금은_mid'] = korStock + forStock + etf + (goldSilver / 2);
-    formatted['현금_mid'] = korStock + forStock + etf + goldSilver + (cash / 2);
+    formatted['국내주식_mid'] = korStock > 0 ? korStock / 2 : null;
+    formatted['해외주식_mid'] = forStock > 0 ? korStock + (forStock / 2) : null;
+    formatted['ETF_mid'] = etf > 0 ? korStock + forStock + (etf / 2) : null;
+    formatted['금은_mid'] = goldSilver > 0 ? korStock + forStock + etf + (goldSilver / 2) : null;
+    formatted['현금_mid'] = cash > 0 ? korStock + forStock + etf + goldSilver + (cash / 2) : null;
 
     // Calculate percent change relative to the previous day
     ['국내주식', '해외주식', 'ETF', '금은', '현금'].forEach(cat => {
@@ -642,11 +711,11 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
             />
 
             {/* Overlaid Trend Lines with Connected Dots and Daily Share Weights */}
-            <Line type="monotone" dataKey="국내주식_mid" stroke="#1d4ed8" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#1d4ed8" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="국내주식_mid" data={chartFormatData} />} legendType="none" />
-            <Line type="monotone" dataKey="해외주식_mid" stroke="#ea580c" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#ea580c" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="해외주식_mid" data={chartFormatData} />} legendType="none" />
-            <Line type="monotone" dataKey="ETF_mid" stroke="#10b981" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#10b981" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="ETF_mid" data={chartFormatData} />} legendType="none" />
-            <Line type="monotone" dataKey="금은_mid" stroke="#ca8a04" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#ca8a04" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="금은_mid" data={chartFormatData} />} legendType="none" />
-            <Line type="monotone" dataKey="현금_mid" stroke="#2563eb" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#2563eb" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="현금_mid" data={chartFormatData} />} legendType="none" />
+            <Line type="monotone" dataKey="국내주식_mid" stroke="#1d4ed8" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#1d4ed8" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="국내주식_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
+            <Line type="monotone" dataKey="해외주식_mid" stroke="#ea580c" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#ea580c" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="해외주식_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
+            <Line type="monotone" dataKey="ETF_mid" stroke="#10b981" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#10b981" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="ETF_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
+            <Line type="monotone" dataKey="금은_mid" stroke="#ca8a04" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#ca8a04" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="금은_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
+            <Line type="monotone" dataKey="현금_mid" stroke="#2563eb" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#2563eb" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="현금_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
