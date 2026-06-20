@@ -402,6 +402,7 @@ export const RECOVERED_DATA = {
     "한투 IRP": 27000000,
     "신한투자": 68600000,
     "메리츠 주식": 32425042,
+    "토스 국내": 42824387,
     "토스 해외": 15289914
   },
   rebalancingTargets: [

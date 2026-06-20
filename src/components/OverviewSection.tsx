@@ -426,6 +426,7 @@ interface OverviewSectionProps {
   customBaseAmounts: Record<string, number>;
   handleBaseAmountChange: (segmentName: string, value: number) => void;
   handleResetBaseAmount: (segmentName: string) => void;
+  accountTrends: any[];
 }
 
 export default function OverviewSection({
@@ -434,6 +435,7 @@ export default function OverviewSection({
   customBaseAmounts,
   handleBaseAmountChange,
   handleResetBaseAmount,
+  accountTrends,
 }: OverviewSectionProps) {
 
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
@@ -498,235 +500,6 @@ export default function OverviewSection({
   // 현재 가치(valuation) 기준 오름차순 정렬하여, 비중이 작은 계좌가 아래에 먼저 쌓이도록 보장
   segments.sort((a, b) => a.valuation - b.valuation);
 
-  // Daily Account-Level Trend Storage
-  const [accountTrends, setAccountTrends] = useState<any[]>(() => {
-    const saved = localStorage.getItem('portfolio_account_trends_daily_v1');
-    let loaded: any[] = [];
-    if (saved) {
-      try {
-        loaded = JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse account daily trends, resetting', e);
-        loaded = [
-          {
-            date: "06월 05일",
-            "토스 국내": 45875787,
-            "토스 국내_예수금(현금)": 5445598,
-            "토스 국내_삼성전자": 3165555,
-            "토스 국내_SK하이닉스": 22518826,
-            "토스 국내_에스티팜": 9384183,
-            "토스 국내_삼성전자우": 5361625,
-            "토스 해외": 22434819,
-            "토스 해외_엔비디아": 22160485,
-            "토스 해외_달러": 274334,
-            "메리츠 주식": 50072074,
-            "메리츠 주식_SK하이닉스": 10333717,
-            "메리츠 주식_삼성전자": 10546231,
-            "메리츠 주식_DB손해보험": 11047506,
-            "메리츠 주식_ACE KRX금현물": 5147154,
-            "메리츠 주식_동아쏘시오홀딩스": 4806180,
-            "메리츠 주식_LG전자": 8115564,
-            "메리츠 주식_예수금(현금)": 75722,
-            "한투 IRP": 29999515,
-            "한투 IRP_Tiger 머니마켓액티브": 9419780,
-            "한투 IRP_ACE KRX금현물": 18789126,
-            "한투 IRP_HANARO 원자력iSelect": 907158,
-            "한투 IRP_Tiger 반도체TOP10": 863660,
-            "한투 IRP_예수금(현금)": 19791,
-            "농협 IRP": 100206698,
-            "농협 IRP_Tiger 반도체TOP10": 17180140,
-            "농협 IRP_Tiger 머니마켓액티브": 28526315,
-            "농협 IRP_KODEX 코스닥150": 14003975,
-            "농협 IRP_HANARO 원자력iSelect": 12474452,
-            "농협 IRP_KODEX TDF2050액티브적격": 10093318,
-            "농협 IRP_Tiger 미국S&P500": 5767739,
-            "농협 IRP_Tiger 미국나스닥100": 5373309,
-            "농협 IRP_예수금(현금)": 6787450,
-            "농협 연금": 9671900,
-            "농협 연금_KODEX은선물": 9671900,
-            "신한투자": 58416391,
-            "신한투자_LG전자": 7202173,
-            "신한투자_삼성전자": 12070627,
-            "신한투자_SK하이닉스": 18488087,
-            "신한투자_삼성전자우": 12622615,
-            "신한투자_예수금(현금)": 8032889
-          },
-          { date: "06월 06일" },
-          { date: "06월 07일" },
-          {
-            date: "06월 08일",
-            "토스 국내": 42824387,
-            "토스 국내_예수금(현금)": 5083387,
-            "토스 국내_삼성전자": 2955000,
-            "토스 국내_SK하이닉스": 21021000,
-            "토스 국내_에스티팜": 8760000,
-            "토스 국내_삼성전자우": 5005000,
-            "토스 해외": 21396806,
-            "토스 해외_엔비디아": 21135166,
-            "토스 해외_달러": 261640,
-            "메리츠 주식": 46298794,
-            "메리츠 주식_SK하이닉스": 9555000,
-            "메리츠 주식_삼성전자": 9751500,
-            "메리츠 주식_DB손해보험": 10215000,
-            "메리츠 주식_ACE KRX금현물": 4759280,
-            "메리츠 주식_동아쏘시오홀딩스": 4444000,
-            "메리츠 주식_LG전자": 7504000,
-            "메리츠 주식_예수금(현금)": 70014,
-            "한투 IRP": 29098105,
-            "한투 IRP_Tiger 머니마켓액티브": 9136740,
-            "한투 IRP_ACE KRX금현물": 18224560,
-            "한투 IRP_HANARO 원자력iSelect": 879900,
-            "한투 IRP_Tiger 반도체TOP10": 837710,
-            "한투 IRP_예수금(현금)": 19195,
-            "농협 IRP": 95925508,
-            "농협 IRP_Tiger 반도체TOP10": 16445570,
-            "농협 IRP_Tiger 머니마켓액티브": 27307560,
-            "농협 IRP_KODEX 코스닥150": 13405710,
-            "농협 IRP_HANARO 원자력iSelect": 11941500,
-            "농협 IRP_KODEX TDF2050액티브적격": 9662100,
-            "농협 IRP_Tiger 미국S&P500": 5521320,
-            "농협 IRP_Tiger 미국나스닥100": 5143840,
-            "농협 IRP_예수금(현금)": 6497908,
-            "농협 연금": 9032300,
-            "농협 연금_KODEX은선물": 9032300,
-            "신한투자": 54343296,
-            "신한투자_LG전자": 6700000,
-            "신한투자_삼성전자": 11229000,
-            "신한투자_SK하이닉스": 17199000,
-            "신한투자_삼성전자우": 11742500,
-            "신한투자_예수금(현금)": 7472796
-          },
-          { date: "06월 09일" },
-          { date: "06월 10일" },
-          { date: "06월 11일" },
-          { date: "06월 12일" },
-          { date: "06월 13일" },
-          { date: "06월 14일" },
-          { date: "06월 15일" }
-        ];
-      }
-    } else {
-      loaded = [
-        {
-          date: "06월 05일",
-          "토스 국내": 45875787,
-          "토스 국내_예수금(현금)": 5445598,
-          "토스 국내_삼성전자": 3165555,
-          "토스 국내_SK하이닉스": 22518826,
-          "토스 국내_에스티팜": 9384183,
-          "토스 국내_삼성전자우": 5361625,
-          "토스 해외": 22434819,
-          "토스 해외_엔비디아": 22160485,
-          "토스 해외_달러": 274334,
-          "메리츠 주식": 50072074,
-          "메리츠 주식_SK하이닉스": 10333717,
-          "메리츠 주식_삼성전자": 10546231,
-          "메리츠 주식_DB손해보험": 11047506,
-          "메리츠 주식_ACE KRX금현물": 5147154,
-          "메리츠 주식_동아쏘시오홀딩스": 4806180,
-          "메리츠 주식_LG전자": 8115564,
-          "메리츠 주식_예수금(현금)": 75722,
-          "한투 IRP": 29999515,
-          "한투 IRP_Tiger 머니마켓액티브": 9419780,
-          "한투 IRP_ACE KRX금현물": 18789126,
-          "한투 IRP_HANARO 원자력iSelect": 907158,
-          "한투 IRP_Tiger 반도체TOP10": 863660,
-          "한투 IRP_예수금(현금)": 19791,
-          "농협 IRP": 100206698,
-          "농협 IRP_Tiger 반도체TOP10": 17180140,
-          "농협 IRP_Tiger 머니마켓액티브": 28526315,
-          "농협 IRP_KODEX 코스닥150": 14003975,
-          "농협 IRP_HANARO 원자력iSelect": 12474452,
-          "농협 IRP_KODEX TDF2050액티브적격": 10093318,
-          "농협 IRP_Tiger 미국S&P500": 5767739,
-          "농협 IRP_Tiger 미국나스닥100": 5373309,
-          "농협 IRP_예수금(현금)": 6787450,
-          "농협 연금": 9671900,
-          "농협 연금_KODEX은선물": 9671900,
-          "신한투자": 58416391,
-          "신한투자_LG전자": 7202173,
-          "신한투자_삼성전자": 12070627,
-          "신한투자_SK하이닉스": 18488087,
-          "신한투자_삼성전자우": 12622615,
-          "신한투자_예수금(현금)": 8032889
-        },
-        { date: "06월 06일" },
-        { date: "06월 07일" },
-        {
-          date: "06월 08일",
-          "토스 국내": 42824387,
-          "토스 국내_예수금(현금)": 5083387,
-          "토스 국내_삼성전자": 2955000,
-          "토스 국내_SK하이닉스": 21021000,
-          "토스 국내_에스티팜": 8760000,
-          "토스 국내_삼성전자우": 5005000,
-          "토스 해외": 21396806,
-          "토스 해외_엔비디아": 21135166,
-          "토스 해외_달러": 261640,
-          "메리츠 주식": 46298794,
-          "메리츠 주식_SK하이닉스": 9555000,
-          "메리츠 주식_삼성전자": 9751500,
-          "메리츠 주식_DB손해보험": 10215000,
-          "메리츠 주식_ACE KRX금현물": 4759280,
-          "메리츠 주식_동아쏘시오홀딩스": 4444000,
-          "메리츠 주식_LG전자": 7504000,
-          "메리츠 주식_예수금(현금)": 70014,
-          "한투 IRP": 29098105,
-          "한투 IRP_Tiger 머니마켓액티브": 9136740,
-          "한투 IRP_ACE KRX금현물": 18224560,
-          "한투 IRP_HANARO 원자력iSelect": 879900,
-          "한투 IRP_Tiger 반도체TOP10": 837710,
-          "한투 IRP_예수금(현금)": 19195,
-          "농협 IRP": 95925508,
-          "농협 IRP_Tiger 반도체TOP10": 16445570,
-          "농협 IRP_Tiger 머니마켓액티브": 27307560,
-          "농협 IRP_KODEX 코스닥150": 13405710,
-          "농협 IRP_HANARO 원자력iSelect": 11941500,
-          "농협 IRP_KODEX TDF2050액티브적격": 9662100,
-          "농협 IRP_Tiger 미국S&P500": 5521320,
-          "농협 IRP_Tiger 미국나스닥100": 5143840,
-          "농협 IRP_예수금(현금)": 6497908,
-          "농협 연금": 9032300,
-          "농협 연금_KODEX은선물": 9032300,
-          "신한투자": 54343296,
-          "신한투자_LG전자": 6700000,
-          "신한투자_삼성전자": 11229000,
-          "신한투자_SK하이닉스": 17199000,
-          "신한투자_삼성전자우": 11742500,
-          "신한투자_예수금(현금)": 7472796
-        },
-        { date: "06월 09일" },
-        { date: "06월 10일" },
-        { date: "06월 11일" },
-        { date: "06월 12일" },
-        { date: "06월 13일" },
-        { date: "06월 14일" },
-        { date: "06월 15일" }
-      ];
-    }
-
-    // Filter out weekend days
-    const isWeekend = (dateLabel: string) => {
-      const match = dateLabel.match(/(\d+)월\s*(\d+)일/);
-      if (!match) return false;
-      const month = parseInt(match[1], 10) - 1;
-      const day = parseInt(match[2], 10);
-      const currentYear = new Date().getFullYear();
-      const d = new Date(currentYear, month, day);
-      return d.getDay() === 0 || d.getDay() === 6;
-    };
-
-    const isBeforeJune8 = (dateLabel: string) => {
-      const match = dateLabel.match(/(\d+)월\s*(\d+)일/);
-      if (!match) return false;
-      const month = parseInt(match[1], 10);
-      const day = parseInt(match[2], 10);
-      return month === 6 && day < 8;
-    };
-
-    return loaded.filter(item => !isWeekend(item.date) && !isBeforeJune8(item.date));
-  });
-
   const getCurDateLabel = () => {
     const now = new Date();
     const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -735,91 +508,25 @@ export default function OverviewSection({
   };
 
   const curDateLabel = getCurDateLabel();
-  const segmentsValuationKey = segments.map(s => `${s.name}:${Math.round(s.valuation)}`).join(',');
-
-  useEffect(() => {
-    // Return early if today is weekend (Saturday or Sunday)
-    const todayDay = new Date().getDay();
-    if (todayDay === 0 || todayDay === 6) {
-      return;
-    }
-
-    setAccountTrends((prev) => {
-      const exists = prev.some(item => item.date === curDateLabel);
-      let nextData;
-
-      if (exists) {
-        let changed = false;
-        const updated = prev.map((item) => {
-          if (item.date === curDateLabel) {
-            const newItem = { ...item };
-            let itemChanged = false;
-
-            segments.forEach(seg => {
-              const currentVal = Math.round(seg.valuation);
-              if (newItem[seg.name] !== currentVal) {
-                newItem[seg.name] = currentVal;
-                itemChanged = true;
-              }
-
-              const activeItems = getSegmentPortfolioItems(seg.name);
-              const activeKeys = new Set(activeItems.map(p => `${seg.name}_${p.name}`));
-
-              // 1. Remove obsolete keys (deleted stocks) for the current day
-              Object.keys(newItem).forEach(k => {
-                if (k.startsWith(`${seg.name}_`) && !activeKeys.has(k)) {
-                  delete newItem[k];
-                  itemChanged = true;
-                }
-              });
-
-              // 2. Add or update active keys
-              activeItems.forEach(pItem => {
-                const k = `${seg.name}_${pItem.name}`;
-                const val = Math.round(pItem.currentValuation);
-                if (newItem[k] !== val) {
-                  newItem[k] = val;
-                  itemChanged = true;
-                }
-              });
-            });
-
-            if (itemChanged) {
-              changed = true;
-              return newItem;
-            }
-          }
-          return item;
-        });
-
-        if (!changed) return prev;
-        nextData = updated;
-      } else {
-        const newRecord: any = { date: curDateLabel };
-        segments.forEach(seg => {
-          newRecord[seg.name] = Math.round(seg.valuation);
-          const items = getSegmentPortfolioItems(seg.name);
-          items.forEach(pItem => {
-            newRecord[`${seg.name}_${pItem.name}`] = Math.round(pItem.currentValuation);
-          });
-        });
-        nextData = [...prev, newRecord];
-      }
-
-      localStorage.setItem('portfolio_account_trends_daily_v1', JSON.stringify(nextData));
-      return nextData;
-    });
-  }, [segmentsValuationKey, curDateLabel]);
 
   const getSegmentDailyChange = (segName: string) => {
     const todayIndex = accountTrends.findIndex(d => d.date === curDateLabel);
-    if (todayIndex <= 0) return { change: 0, percent: 0 };
-    
     let prevVal = 0;
-    for (let i = todayIndex - 1; i >= 0; i--) {
-      if (accountTrends[i][segName] && accountTrends[i][segName] > 0) {
-        prevVal = accountTrends[i][segName];
-        break;
+
+    if (todayIndex > 0) {
+      for (let i = todayIndex - 1; i >= 0; i--) {
+        if (accountTrends[i][segName] && accountTrends[i][segName] > 0) {
+          prevVal = accountTrends[i][segName];
+          break;
+        }
+      }
+    } else {
+      // Weekend or today not yet created: compare live valuation against the last recorded day's valuation
+      for (let i = accountTrends.length - 1; i >= 0; i--) {
+        if (accountTrends[i][segName] && accountTrends[i][segName] > 0) {
+          prevVal = accountTrends[i][segName];
+          break;
+        }
       }
     }
     
@@ -833,8 +540,47 @@ export default function OverviewSection({
     return { change, percent };
   };
 
-  // Keep all account trends to align the horizontal axis consistently from June 5th onward, matched with other trend charts.
-  const validAccountTrends = accountTrends;
+  // Pre-process accountTrends to carry over previous day's state on empty days (weekdays with no records)
+  const validAccountTrends = React.useMemo(() => {
+    if (!accountTrends || accountTrends.length === 0) return [];
+
+    const filled: any[] = [];
+    let lastNonEmptyDay: any = null;
+
+    accountTrends.forEach((day) => {
+      // Check if this day is empty.
+      // An empty day has only "date" or all numeric keys are 0.
+      let isEmpty = true;
+      Object.keys(day).forEach(key => {
+        if (key !== 'date' && typeof day[key] === 'number' && day[key] > 0) {
+          isEmpty = false;
+        }
+      });
+
+      if (isEmpty && lastNonEmptyDay) {
+        // Carry over all keys from the last non-empty day, keeping the current day's date label.
+        filled.push({
+          ...lastNonEmptyDay,
+          date: day.date
+        });
+      } else {
+        filled.push(day);
+        if (!isEmpty) {
+          lastNonEmptyDay = day;
+        }
+      }
+    });
+
+    return filled;
+  }, [accountTrends]);
+
+  const getSegmentValuationInDayForChart = (segName: string, segCurrentValuation: number, day: any) => {
+    const lastDayInTrends = validAccountTrends[validAccountTrends.length - 1];
+    if (day.date === curDateLabel || (lastDayInTrends && day.date === lastDayInTrends.date)) {
+      return segCurrentValuation;
+    }
+    return day[segName] || 0;
+  };
 
   const getSegmentYieldInDay = (segName: string, day: any) => {
     const seg = segments.find(s => s.name === segName);
@@ -843,7 +589,7 @@ export default function OverviewSection({
     const isCustom = customBaseAmounts[seg.name] !== undefined;
     const baseAmount = isCustom ? customBaseAmounts[seg.name] : seg.purchase;
     
-    const val = day[segName];
+    const val = getSegmentValuationInDayForChart(seg.name, seg.valuation, day);
     if (val === undefined || val <= 0) {
       return null;
     }
@@ -891,7 +637,7 @@ export default function OverviewSection({
     let total_val = 0;
     
     segments.forEach(seg => {
-      const amountVal = day[seg.name] || 0;
+      const amountVal = getSegmentValuationInDayForChart(seg.name, seg.valuation, day);
       const valInMan = Math.round(amountVal / 10000);
       formatted[seg.name] = valInMan;
       total_val += valInMan;
@@ -903,12 +649,13 @@ export default function OverviewSection({
     segments.forEach(seg => {
       const val = formatted[seg.name] || 0;
       formatted[`${seg.name}_mid`] = val > 0 ? runningSum + (val / 2) : null;
+      runningSum += val;
       
       // Calculate day-over-day change rate and change amount instead of share weight
       if (dayIdx > 0) {
         const prevDay = validAccountTrends[dayIdx - 1];
-        const prevVal = prevDay[seg.name] || 0;
-        const currentVal = day[seg.name] || 0;
+        const prevVal = getSegmentValuationInDayForChart(seg.name, seg.valuation, prevDay);
+        const currentVal = getSegmentValuationInDayForChart(seg.name, seg.valuation, day);
         if (prevVal > 0 && currentVal > 0) {
           formatted[`${seg.name}_changeAmount`] = currentVal - prevVal;
           formatted[`${seg.name}_changeRate`] = ((currentVal - prevVal) / prevVal) * 100;
@@ -920,8 +667,6 @@ export default function OverviewSection({
         formatted[`${seg.name}_changeAmount`] = null;
         formatted[`${seg.name}_changeRate`] = null;
       }
-
-      runningSum += val;
     });
 
     let total_changeAmount = null;
@@ -931,7 +676,8 @@ export default function OverviewSection({
       const prevDay = validAccountTrends[dayIdx - 1];
       let prevTotalVal = 0;
       segments.forEach(seg => {
-        prevTotalVal += Math.round((prevDay[seg.name] || 0) / 10000);
+        const segPrevVal = getSegmentValuationInDayForChart(seg.name, seg.valuation, prevDay);
+        prevTotalVal += Math.round(segPrevVal / 10000);
       });
       if (prevTotalVal > 0) {
         total_changeAmount = (total_val - prevTotalVal) * 10000; // in KRW
@@ -1072,9 +818,10 @@ export default function OverviewSection({
   };
 
   const getPortfolioItemValuationInDay = (segName: string, itemName: string, itemCurrentValuation: number, day: any) => {
-    // For today (the live/current day), ALWAYS prioritize the actual live valuation 
+    // For today (the live/current day) or the right-most day on the chart, ALWAYS prioritize the actual live valuation 
     // so changes in the accounts editor are reflected on the chart in real-time.
-    if (day.date === curDateLabel) {
+    const lastDayInTrends = validAccountTrends[validAccountTrends.length - 1];
+    if (day.date === curDateLabel || (lastDayInTrends && day.date === lastDayInTrends.date)) {
       return itemCurrentValuation;
     }
 
@@ -1106,6 +853,7 @@ export default function OverviewSection({
     items.forEach(item => {
       const val = formatted[item.name] || 0;
       formatted[`${item.name}_mid`] = val > 0 ? runningSum + (val / 2) : null;
+      runningSum += val;
       
       // Calculate day-over-day change rate and change amount instead of share weight
       if (dayIdx > 0) {
@@ -1123,8 +871,6 @@ export default function OverviewSection({
         formatted[`${item.name}_changeAmount`] = null;
         formatted[`${item.name}_changeRate`] = null;
       }
-
-      runningSum += val;
     });
 
     let total_changeAmount = null;
@@ -1572,6 +1318,7 @@ export default function OverviewSection({
                     key={`${barItem.name}_mid`}
                     type="monotone"
                     dataKey={`${barItem.name}_mid`}
+                    connectNulls={true}
                     stroke={getSegmentColor(barItem.name, idx)}
                     strokeWidth={1.2}
                     strokeOpacity={0.6}
@@ -1606,7 +1353,7 @@ export default function OverviewSection({
                   <button
                     key={seg.name}
                     id={`seg-delta-button-${seg.name}`}
-                    onClick={() => setSelectedSegment(seg.name)}
+                    onClick={() => setSelectedSegment(selectedSegment === seg.name ? null : seg.name)}
                     className={`w-full text-left flex flex-col sm:flex-row xl:flex-col gap-1.5 p-2 rounded-xl border transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-indigo-50 border-indigo-400 ring-2 ring-indigo-400/20 shadow-md'

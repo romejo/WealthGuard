@@ -376,10 +376,19 @@ export default function App() {
               seed += seg.name.charCodeAt(i);
             }
             const stepSeed = Math.sin(seed + indexOffset * 17.31) * 9999;
-            const deviation = ((stepSeed - Math.floor(stepSeed)) - 0.5) * 0.12;
+            const deviation = isToday ? 0 : ((stepSeed - Math.floor(stepSeed)) - 0.5) * 0.12;
 
             const dayValuation = Math.round(seg.valuation * (1 - deviation));
             record[seg.name] = dayValuation;
+
+            // Clear old stock keys for this segment if it's today to prevent obsolete stocks from lingering
+            if (isToday) {
+              Object.keys(record).forEach((k) => {
+                if (k.startsWith(`${seg.name}_`)) {
+                  delete record[k];
+                }
+              });
+            }
 
             const pItems = getSegmentPortfolioItems(seg.name, accounts);
             pItems.forEach((pItem) => {
@@ -738,6 +747,7 @@ export default function App() {
         "농협 IRP": 90400755,
         "농협 연금": 10010000,
         "한투 IRP": 27000000,
+        "토스 국내": 42824387,
         "토스 해외": 15000000,
         "신한투자": 60000000,
         "메리츠 주식": 49114605
@@ -1632,6 +1642,7 @@ export default function App() {
               customBaseAmounts={customBaseAmounts}
               handleBaseAmountChange={handleBaseAmountChange}
               handleResetBaseAmount={handleResetBaseAmount}
+              accountTrends={accountTrends}
             />
           </section>
 
