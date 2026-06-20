@@ -808,10 +808,33 @@ export default function OverviewSection({
     
     // 비중(가치)이 작은 종목을 아래로 놓고 (오름차순 정렬)
     items.sort((a, b) => {
-      if (a.currentValuation !== b.currentValuation) {
-        return a.currentValuation - b.currentValuation;
+      if (segName === '토스 국내') {
+        const tossOrder: Record<string, number> = {
+          '현대차': 1,
+          '에스티팜': 2,
+          '달러': 3,
+          'NAVER': 4,
+          '한전KPS': 5,
+          '삼성전자': 6,
+          '삼성전자우': 7,
+          'SK하이닉스': 8,
+          '예수금(현금)': 9,
+          '예수금': 9,
+          '현금': 9
+        };
+        const weightA = tossOrder[a.name] !== undefined ? tossOrder[a.name] : 100;
+        const weightB = tossOrder[b.name] !== undefined ? tossOrder[b.name] : 100;
+        if (weightA !== weightB) {
+          return weightA - weightB;
+        }
+        return a.name.localeCompare(b.name);
+      } else {
+        // 타 계좌(신한투자 등)는 기존과 완전히 동일하게 현재 가치 오름차순 기준으로 정렬 유지
+        if (a.currentValuation !== b.currentValuation) {
+          return a.currentValuation - b.currentValuation;
+        }
+        return a.name.localeCompare(b.name);
       }
-      return a.name.localeCompare(b.name);
     });
 
     return items;
@@ -1309,7 +1332,7 @@ export default function OverviewSection({
                   label={<TotalAssetCustomizedLabel data={selectedSegment ? portfolioChartData : accountChartData} />}
                 />
 
-                {/* Overlaid Midpoint Trend Lines with Connected Dots and Daily Share Weights */}
+                {/* Overlaid Midpoint Trend Lines with Connected Dots and Daily Share Weights - Line hidden but labels preserved */}
                 {(selectedSegment 
                   ? getSegmentPortfolioItems(selectedSegment).map((item) => ({ name: item.name }))
                   : segments.map((seg) => ({ name: seg.name }))
@@ -1319,11 +1342,10 @@ export default function OverviewSection({
                     type="monotone"
                     dataKey={`${barItem.name}_mid`}
                     connectNulls={true}
-                    stroke={getSegmentColor(barItem.name, idx)}
-                    strokeWidth={1.2}
-                    strokeOpacity={0.6}
-                    dot={{ r: 2.5, fill: getSegmentColor(barItem.name, idx) }}
-                    activeDot={{ r: 4 }}
+                    stroke="transparent"
+                    strokeWidth={0}
+                    dot={false}
+                    activeDot={false}
                     label={
                       <AssetCustomizedLabel 
                         dataKey={`${barItem.name}_mid`} 

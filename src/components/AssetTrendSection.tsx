@@ -710,12 +710,12 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
               name="총 자산"
             />
 
-            {/* Overlaid Trend Lines with Connected Dots and Daily Share Weights */}
-            <Line type="monotone" dataKey="국내주식_mid" stroke="#1d4ed8" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#1d4ed8" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="국내주식_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
-            <Line type="monotone" dataKey="해외주식_mid" stroke="#ea580c" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#ea580c" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="해외주식_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
-            <Line type="monotone" dataKey="ETF_mid" stroke="#10b981" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#10b981" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="ETF_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
-            <Line type="monotone" dataKey="금은_mid" stroke="#ca8a04" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#ca8a04" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="금은_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
-            <Line type="monotone" dataKey="현금_mid" stroke="#2563eb" strokeWidth={1.2} strokeOpacity={0.6} dot={{ r: 2.5, fill: "#2563eb" }} activeDot={{ r: 4 }} label={<AssetCustomizedLabel dataKey="현금_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
+            {/* Overlaid Trend Lines with Connected Dots and Daily Share Weights - Lines hidden but labels preserved */}
+            <Line type="monotone" dataKey="국내주식_mid" stroke="transparent" strokeWidth={0} dot={false} activeDot={false} label={<AssetCustomizedLabel dataKey="국내주식_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
+            <Line type="monotone" dataKey="해외주식_mid" stroke="transparent" strokeWidth={0} dot={false} activeDot={false} label={<AssetCustomizedLabel dataKey="해외주식_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
+            <Line type="monotone" dataKey="ETF_mid" stroke="transparent" strokeWidth={0} dot={false} activeDot={false} label={<AssetCustomizedLabel dataKey="ETF_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
+            <Line type="monotone" dataKey="금은_mid" stroke="transparent" strokeWidth={0} dot={false} activeDot={false} label={<AssetCustomizedLabel dataKey="금은_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
+            <Line type="monotone" dataKey="현금_mid" stroke="transparent" strokeWidth={0} dot={false} activeDot={false} label={<AssetCustomizedLabel dataKey="현금_mid" data={chartFormatData} itemsList={['국내주식', '해외주식', 'ETF', '금은', '현금']} />} legendType="none" />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

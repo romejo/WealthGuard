@@ -719,11 +719,13 @@ export default function App() {
     // Custom active user data restore sequence with precise ETF classification integration
     const hasActiveRecoveryRun = localStorage.getItem('portfolio_dashboard_restored_uploaded_v12_etf_recovered');
     if (hasActiveRecoveryRun !== 'yes') {
+      const backupRate = RECOVERED_DATA.exchangeRate;
+      const backupBaseAmounts = { ...RECOVERED_DATA.segmentBaseAmounts };
       const preciseAssetTrends = computeExactAssetTrends(RECOVERED_DATA.accountTrendsDaily, RECOVERED_DATA.accounts);
 
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(RECOVERED_DATA.accounts));
-      localStorage.setItem(RATE_STORAGE_KEY, RECOVERED_DATA.exchangeRate.toString());
-      localStorage.setItem('portfolio_dashboard_segment_base_amounts', JSON.stringify(RECOVERED_DATA.segmentBaseAmounts));
+      localStorage.setItem(RATE_STORAGE_KEY, backupRate.toString());
+      localStorage.setItem('portfolio_dashboard_segment_base_amounts', JSON.stringify(backupBaseAmounts));
       localStorage.setItem('portfolio_dashboard_rebalancing_targets', JSON.stringify(RECOVERED_DATA.rebalancingTargets));
       localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(preciseAssetTrends));
       localStorage.setItem('portfolio_account_trends_daily_v1', JSON.stringify(RECOVERED_DATA.accountTrendsDaily));
@@ -732,194 +734,9 @@ export default function App() {
       localStorage.setItem('portfolio_dashboard_restored_uploaded_v5_gold', 'yes');
 
       setAccounts(RECOVERED_DATA.accounts as Account[]);
-      setExchangeRate(RECOVERED_DATA.exchangeRate);
-      setCustomBaseAmounts(RECOVERED_DATA.segmentBaseAmounts);
-      setAccountTrends(RECOVERED_DATA.accountTrendsDaily);
-      setBackupKey(prev => prev + 1);
-      return;
-    }
-
-    // Force write user backup the very first time to ensure clean recovery
-    const hasRecovered = localStorage.getItem('portfolio_dashboard_restored_uploaded_v5_gold');
-    if (hasRecovered !== 'yes') {
-      const backupRate = 1540;
-      const backupBaseAmounts = {
-        "농협 IRP": 90400755,
-        "농협 연금": 10010000,
-        "한투 IRP": 27000000,
-        "토스 국내": 42824387,
-        "토스 해외": 15000000,
-        "신한투자": 60000000,
-        "메리츠 주식": 49114605
-      };
-      
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_ACCOUNTS));
-      localStorage.setItem(RATE_STORAGE_KEY, backupRate.toString());
-      localStorage.setItem('portfolio_dashboard_segment_base_amounts', JSON.stringify(backupBaseAmounts));
-      localStorage.setItem('portfolio_dashboard_rebalancing_targets', JSON.stringify(DEFAULT_REBALANCING_TARGETS));
-      
-      const backupAssetTrends = [
-        { date: "06월 05일", 국내주식: 170491680, 해외주식: 22434819, 금은: 33562580, 현금: 90188105 },
-        { date: "06월 06일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 07일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 08일", 국내주식: 189918650, 해외주식: 21396806, 금은: 32016140, 현금: 55587600 },
-        { date: "06월 09일", 국내주식: 190728400, 해외주식: 21487266, 금은: 32128980, 현금: 62494246 },
-        { date: "06월 10일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 11일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 12일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 13일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 14일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 15일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 16일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 17일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 18일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 },
-        { date: "06월 19일", 국내주식: 0, 해외주식: 0, 금은: 0, 현금: 0 }
-      ];
-      const backupAccountTrends = [
-        {
-          date: "06월 05일",
-          "토스 국내": 45875787,
-          "토스 국내_예수금(현금)": 5445598,
-          "토스 국내_삼성전자": 3165555,
-          "토스 국내_SK하이닉스": 22518826,
-          "토스 국내_에스티팜": 9384183,
-          "토스 국내_삼성전자우": 5361625,
-          "토스 해외": 22434819,
-          "토스 해외_엔비디아": 22160485,
-          "토스 해외_달러": 274334,
-          "메리츠 주식": 50072074,
-          "메리츠 주식_SK하이닉스": 10333717,
-          "메리츠 주식_삼성전자": 10546231,
-          "메리츠 주식_DB손해보험": 11047506,
-          "메리츠 주식_ACE KRX금현물": 5147154,
-          "메리츠 주식_동아쏘시오홀딩스": 4806180,
-          "메리츠 주식_LG전자": 8115564,
-          "메리츠 주식_예수금(현금)": 75722,
-          "한투 IRP": 29999515,
-          "한투 IRP_Tiger 머니마켓액티브": 9419780,
-          "한투 IRP_ACE KRX금현물": 18789126,
-          "한투 IRP_HANARO 원자력iSelect": 907158,
-          "한투 IRP_Tiger 반도체TOP10": 863660,
-          "한투 IRP_예수금(현금)": 19791,
-          "농협 IRP": 100206698,
-          "농협 IRP_Tiger 반도체TOP10": 17180140,
-          "농협 IRP_Tiger 머니마켓액티브": 28526315,
-          "농협 IRP_KODEX 코스닥150": 14003975,
-          "농협 IRP_HANARO 원자력iSelect": 12474452,
-          "농협 IRP_KODEX TDF2050액티브적격": 10093318,
-          "농협 IRP_Tiger 미국S&P500": 5767739,
-          "농협 IRP_Tiger 미국나스닥100": 5373309,
-          "농협 IRP_예수금(현금)": 6787450,
-          "농협 연금": 9671900,
-          "농협 연금_KODEX은선물": 9671900,
-          "신한투자": 58416391,
-          "신한투자_LG전자": 7202173,
-          "신한투자_삼성전자": 12070627,
-          "신한투자_SK하이닉스": 18488087,
-          "신한투자_삼성전자우": 12622615,
-          "신한투자_예수금(현금)": 8032889
-        },
-        { date: "06월 06일" },
-        { date: "06월 07일" },
-        {
-          date: "06월 08일",
-          "토스 국내": 42824387,
-          "토스 국내_예수금(현금)": 5083387,
-          "토스 국내_삼성전자": 2955000,
-          "토스 국내_SK하이닉스": 21021000,
-          "토스 국내_에스티팜": 8760000,
-          "토스 국내_삼성전자우": 5005000,
-          "토스 해외": 21396806,
-          "토스 해외_엔비디아": 21135166,
-          "토스 해외_달러": 261640,
-          "메리츠 주식": 46298794,
-          "메리츠 주식_SK하이닉스": 9555000,
-          "메리츠 주식_삼성전자": 9751500,
-          "메리츠 주식_DB손해보험": 10215000,
-          "메리츠 주식_ACE KRX금현물": 4759280,
-          "메리츠 주식_동아쏘시오홀딩스": 4444000,
-          "메리츠 주식_LG전자": 7504000,
-          "메리츠 주식_예수금(현금)": 70014,
-          "한투 IRP": 29098105,
-          "한투 IRP_Tiger 머니마켓액티브": 9136740,
-          "한투 IRP_ACE KRX금현물": 18224560,
-          "한투 IRP_HANARO 원자력iSelect": 879900,
-          "한투 IRP_Tiger 반도체TOP10": 837710,
-          "한투 IRP_예수금(현금)": 19195,
-          "농협 IRP": 95925508,
-          "농협 IRP_Tiger 반도체TOP10": 16445570,
-          "농협 IRP_Tiger 머니마켓액티브": 27307560,
-          "농협 IRP_KODEX 코스닥150": 13405710,
-          "농협 IRP_HANARO 원자력iSelect": 11941500,
-          "농협 IRP_KODEX TDF2050액티브적격": 9662100,
-          "농협 IRP_Tiger 미국S&P500": 5521320,
-          "농협 IRP_Tiger 미국나스닥100": 5143840,
-          "농협 IRP_예수금(현금)": 6497908,
-          "농협 연금": 9032300,
-          "농협 연금_KODEX은선물": 9032300,
-          "신한투자": 54343296,
-          "신한투자_LG전자": 6700000,
-          "신한투자_삼성전자": 11229000,
-          "신한투자_SK하이닉스": 17199000,
-          "신한투자_삼성전자우": 11742500,
-          "신한투자_예수금(현금)": 7472796
-        },
-        {
-          date: "06월 09일",
-          "토스 국내": 45434387,
-          "토스 국내_삼성전자": 3100000,
-          "토스 국내_SK하이닉스": 22495000,
-          "토스 국내_에스티팜": 9400000,
-          "토스 국내_삼성전자우": 5356000,
-          "토스 국내_예수금(현금)": 5083387,
-          "토스 해외": 21487266,
-          "토스 해외_엔비디아": 21226498,
-          "토스 해외_달러": 260768,
-          "메리츠 주식": 47088259,
-          "메리츠 주식_SK하이닉스": 10225000,
-          "메리츠 주식_삼성전자": 10230000,
-          "메리츠 주식_DB손해보험": 10440000,
-          "메리츠 주식_ACE KRX금현물": 4770760,
-          "메리츠 주식_동아쏘시오홀딩스": 4576000,
-          "메리츠 주식_예수금(현금)": 6846499,
-          "한투 IRP": 29231170,
-          "한투 IRP_Tiger 머니마켓액티브": 9137185,
-          "한투 IRP_ACE KRX금현물": 18268520,
-          "한투 IRP_HANARO 원자력iSelect": 903070,
-          "한투 IRP_Tiger 반도체TOP10": 894520,
-          "한투 IRP_예수금(현금)": 19195,
-          "농협 IRP": 98243117,
-          "농협 IRP_Tiger 반도체TOP10": 17560840,
-          "농협 IRP_Tiger 머니마켓액티브": 22380970,
-          "농협 IRP_KODEX 코스닥150": 14331120,
-          "농협 IRP_HANARO 원자력iSelect": 12255950,
-          "농협 IRP_KODEX TDF2050액티브적격": 11678940,
-          "농협 IRP_Tiger 미국S&P500": 8402415,
-          "농협 IRP_Tiger 미국나스닥100": 6128545,
-          "농협 IRP_예수금(현금)": 5504337,
-          "농협 연금": 9089700,
-          "농협 연금_KODEX은선물": 9089700,
-          "신한투자": 56273673,
-          "신한투자_삼성전자": 11780000,
-          "신한투자_SK하이닉스": 18405000,
-          "신한투자_삼성전자우": 12566000,
-          "신한투자_예수금(현금)": 13522673
-        },
-        { date: "06월 10일" },
-        { date: "06월 11일" },
-        { date: "06월 12일" },
-        { date: "06월 13일" },
-        { date: "06월 14일" },
-        { date: "06월 15일" }
-      ];
-
-      localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(backupAssetTrends));
-      localStorage.setItem('portfolio_account_trends_daily_v1', JSON.stringify(backupAccountTrends));
-      localStorage.setItem('portfolio_dashboard_restored_uploaded_v5_gold', 'yes');
-
-      setAccounts(DEFAULT_ACCOUNTS);
       setExchangeRate(backupRate);
       setCustomBaseAmounts(backupBaseAmounts);
+      setAccountTrends(RECOVERED_DATA.accountTrendsDaily);
       setBackupKey(prev => prev + 1);
     } else {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -927,10 +744,10 @@ export default function App() {
         try {
           setAccounts(JSON.parse(saved));
         } catch (e) {
-          setAccounts(DEFAULT_ACCOUNTS);
+          setAccounts(RECOVERED_DATA.accounts as Account[]);
         }
       } else {
-        setAccounts(DEFAULT_ACCOUNTS);
+        setAccounts(RECOVERED_DATA.accounts as Account[]);
       }
 
       const savedRate = localStorage.getItem(RATE_STORAGE_KEY);
@@ -939,6 +756,8 @@ export default function App() {
         if (!isNaN(rateNum) && rateNum > 0) {
           setExchangeRate(rateNum);
         }
+      } else {
+        setExchangeRate(RECOVERED_DATA.exchangeRate);
       }
     }
   }, []);
