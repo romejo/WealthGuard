@@ -7,6 +7,9 @@ const AssetCustomizedLabel = (props: any) => {
   const { x, y, index, data, dataKey, payload } = props;
   if (x === undefined || y === undefined || !dataKey) return null;
 
+  // Only display on the last day's bar graph to prevent label repetition and overlapping
+  if (!data || index === undefined || index !== data.length - 1) return null;
+
   const categoryClean = dataKey.replace('_mid', '');
   
   let changeAmount: number | undefined | null;
@@ -539,7 +542,7 @@ export default function AssetTrendSection({ accounts, exchangeRate }: AssetTrend
   // Customized tooltip content with detailed amounts
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const filteredPayload = payload.filter((entry: any) => !entry.dataKey.endsWith('_mid') && entry.dataKey !== 'total_val');
+      const filteredPayload = payload.filter((entry: any) => !entry.dataKey.endsWith('_mid') && entry.dataKey !== 'total_val' && entry.value !== 0);
       const reversedPayload = [...filteredPayload].reverse(); // Total stacking render order matching
       const sum = filteredPayload.reduce((acc: number, entry: any) => acc + entry.value, 0);
       return (

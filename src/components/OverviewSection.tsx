@@ -234,6 +234,9 @@ const AssetCustomizedLabel = (props: any) => {
   const { x, y, index, data, dataKey, payload } = props;
   if (x === undefined || y === undefined || !dataKey) return null;
 
+  // Only display on the last day's bar graph to prevent label repetition and overlapping
+  if (!data || index === undefined || index !== data.length - 1) return null;
+
   const categoryClean = dataKey.replace('_mid', '');
   
   // Clean up stock names for better readability and to avoid overlaps
@@ -1129,7 +1132,8 @@ export default function OverviewSection({
     if (active && payload && payload.length) {
       const filteredPayload = payload.filter((entry: any) => 
         entry.dataKey !== 'total_val' && 
-        !(typeof entry.dataKey === 'string' && entry.dataKey.endsWith('_mid'))
+        !(typeof entry.dataKey === 'string' && entry.dataKey.endsWith('_mid')) &&
+        entry.value !== 0
       );
       const reversedPayload = [...filteredPayload].reverse(); // Stacking order mapping
       const sum = filteredPayload.reduce((acc: number, entry: any) => acc + (entry.value || 0), 0);
