@@ -444,6 +444,334 @@ export default function App() {
     return false; // Show welcome/setup on fresh installation
   });
 
+  // --- 한국투자증권 API 연동 상태 및 연계 알고리즘 ---
+  const [koreaInvestAppKey, setKoreaInvestAppKey] = useState<string>('');
+  const [koreaInvestAppSecret, setKoreaInvestAppSecret] = useState<string>('');
+  const [koreaInvestToken, setKoreaInvestToken] = useState<string>('');
+  const [koreaInvestTokenCreatedAt, setKoreaInvestTokenCreatedAt] = useState<string>('');
+  const [koreaInvestApiType, setKoreaInvestApiType] = useState<string>('real'); // 'real' | 'mock' | 'custom' | 'legacy'
+  const [koreaInvestCustomUrl, setKoreaInvestCustomUrl] = useState<string>('');
+  const [isSyncingPrices, setIsSyncingPrices] = useState<boolean>(false);
+  const [syncStatusList, setSyncStatusList] = useState<{ticker: string, name: string, status: 'success'|'error', oldPrice: number, newPrice: number, errorMsg?: string}[]>([]);
+  const [isKiModalOpen, setIsKiModalOpen] = useState<boolean>(false);
+  const [kiInputAppKey, setKiInputAppKey] = useState<string>('');
+  const [kiInputAppSecret, setKiInputAppSecret] = useState<string>('');
+  const [kiError, setKiError] = useState<string>('');
+  const [kiSuccess, setKiSuccess] = useState<string>('');
+
+  // --- 한투 원격 서버 대기 상태 시세 점검 및 도메인 접속 테스트 상태 ---
+  const [isDiagnosing, setIsDiagnosing] = useState<boolean>(false);
+  const [diagnosticResults, setDiagnosticResults] = useState<{
+    name: string;
+    url: string;
+    reachable: boolean;
+    status?: number;
+    duration: string;
+    msg: string;
+  }[] | null>(null);
+
+  const runConnectionDiagnostics = async () => {
+    setIsDiagnosing(true);
+    setDiagnosticResults(null);
+    try {
+      const res = await fetch("/api/koreainvest/test-connection");
+      if (!res.ok) {
+        throw new Error("서버와의 통신에 실패했습니다.");
+      }
+      const data = await res.json();
+      if (data && data.results) {
+        setDiagnosticResults(data.results);
+      } else {
+        throw new Error("결과 구조를 구성할 수 없습니다.");
+      }
+    } catch (err: any) {
+      alert("진단 도중 서버 연결에 실패했습니다: " + err.message);
+    } finally {
+      setIsDiagnosing(false);
+    }
+  };
+
+  const getCryptoPassword = () => {
+    return passwordPlaintext || "wealthguard_default_salt_key";
+  };
+
+  const loadKoreaInvestCredentials = async (pw: string) => {
+    try {
+      const configStr = localStorage.getItem('portfolio_koreainvest_config');
+      if (!configStr) return;
+      const config = JSON.parse(configStr);
+
+      let appkey = "";
+      let appsecret = "";
+      let token = "";
+      let apiType = config.apiType || "real";
+      let customUrl = config.customUrl || "";
+
+      if (config.appkeyEncrypted) {
+        try {
+          appkey = await decryptData(config.appkeyEncrypted, pw);
+        } catch (e) {
+          console.warn("한투 APP_KEY 복호화 실패:", e);
+        }
+      }
+
+      if (config.appsecretEncrypted) {
+        try {
+          appsecret = await decryptData(config.appsecretEncrypted, pw);
+        } catch (e) {
+          console.warn("한투 APP_SECRET 복호화 실패:", e);
+        }
+      }
+
+      if (config.tokenEncrypted) {
+        try {
+          token = await decryptData(config.tokenEncrypted, pw);
+        } catch (e) {
+          console.warn("한투 Bearer 토큰 복호화 실패:", e);
+        }
+      }
+
+      setKoreaInvestAppKey(appkey);
+      setKoreaInvestAppSecret(appsecret);
+      setKoreaInvestToken(token);
+      setKoreaInvestTokenCreatedAt(config.tokenCreatedAt || "");
+      setKoreaInvestApiType(apiType);
+      setKoreaInvestCustomUrl(customUrl);
+
+      if (appkey) setKiInputAppKey(appkey);
+      if (appsecret) setKiInputAppSecret(appsecret);
+    } catch (err) {
+      console.error("한투 설정 로드 중 에러 발생:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (isUnlocked) {
+      loadKoreaInvestCredentials(getCryptoPassword());
+    }
+  }, [isUnlocked, passwordPlaintext]);
+
+  const saveKoreaInvestCredentials = async (appkey: string, appsecret: string, apiType = "real", customUrl = "") => {
+    setKiError('');
+    setKiSuccess('');
+    try {
+      const pw = getCryptoPassword();
+      const appkeyEncrypted = await encryptData(appkey.trim(), pw);
+      const appsecretEncrypted = await encryptData(appsecret.trim(), pw);
+
+      const config = {
+        appkeyEncrypted,
+        appsecretEncrypted,
+        tokenEncrypted: "",
+        tokenCreatedAt: "",
+        apiType,
+        customUrl
+      };
+
+      localStorage.setItem('portfolio_koreainvest_config', JSON.stringify(config));
+      setKoreaInvestAppKey(appkey.trim());
+      setKoreaInvestAppSecret(appsecret.trim());
+      setKoreaInvestToken("");
+      setKoreaInvestTokenCreatedAt("");
+      setKoreaInvestApiType(apiType);
+      setKoreaInvestCustomUrl(customUrl);
+      
+      setKiSuccess('한국투자증권 API 키와 서버 유형이 성공적으로 암호화 저장되었습니다!');
+    } catch (err) {
+      setKiError('인증 데이터 저장 실패: ' + (err as Error).message);
+    }
+  };
+
+  const getOrRefreshKoreaInvestToken = async (forceRefresh = false): Promise<{ token: string, appkey: string, appsecret: string }> => {
+    const pw = getCryptoPassword();
+    const appkey = koreaInvestAppKey || kiInputAppKey;
+    const appsecret = koreaInvestAppSecret || kiInputAppSecret;
+
+    if (!appkey || !appsecret) {
+      throw new Error("한국투자증권 APP_KEY와 APP_SECRET가 등록되지 않았습니다.");
+    }
+
+    const isTokenValid = () => {
+      if (!koreaInvestToken || !koreaInvestTokenCreatedAt) return false;
+      const createdTime = new Date(koreaInvestTokenCreatedAt).getTime();
+      const now = new Date().getTime();
+      const diffHours = (now - createdTime) / (1000 * 60 * 60);
+      return diffHours < 24;
+    };
+
+    if (isTokenValid() && !forceRefresh) {
+      return { token: koreaInvestToken, appkey, appsecret };
+    }
+
+    const response = await fetch("/api/koreainvest/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        appkey, 
+        appsecret,
+        api_type: koreaInvestApiType,
+        custom_url: koreaInvestCustomUrl
+      }),
+    });
+
+    if (!response.ok) {
+      const errRes = await response.json();
+      const detailsText = errRes.details ? JSON.stringify(errRes.details) : "";
+      throw new Error((errRes.error || "한투 토큰을 갱신하는 중 오류가 발생했습니다.") + (detailsText ? ` (상세오류: ${detailsText})` : ""));
+    }
+
+    const resData = await response.json();
+    const newToken = resData.access_token;
+    const timestamp = new Date().toISOString();
+
+    const encryptedToken = await encryptData(newToken, pw);
+    const appkeyEncrypted = await encryptData(appkey, pw);
+    const appsecretEncrypted = await encryptData(appsecret, pw);
+
+    const config = {
+      appkeyEncrypted,
+      appsecretEncrypted,
+      tokenEncrypted: encryptedToken,
+      tokenCreatedAt: timestamp,
+      apiType: koreaInvestApiType,
+      customUrl: koreaInvestCustomUrl
+    };
+
+    localStorage.setItem('portfolio_koreainvest_config', JSON.stringify(config));
+    setKoreaInvestToken(newToken);
+    setKoreaInvestTokenCreatedAt(timestamp);
+
+    return { token: newToken, appkey, appsecret };
+  };
+
+  const syncAllStockPrices = async (showUIMessages = true) => {
+    setIsSyncingPrices(true);
+    try {
+      const { token, appkey, appsecret } = await getOrRefreshKoreaInvestToken();
+
+      const codesMap: Record<string, string> = {};
+      accounts.forEach(acc => {
+        acc.stocks.forEach(s => {
+          const ticker = (s.ticker || '').trim();
+          if (/^\d{6}$/.test(ticker)) {
+            codesMap[ticker] = s.name;
+          }
+        });
+      });
+
+      const uniqueCodes = Object.keys(codesMap);
+      if (uniqueCodes.length === 0) {
+        if (showUIMessages) {
+          alert("포트폴리오에 등록된 유효한 국내주식 종목코드(6자리 숫자)가 없습니다.");
+        }
+        setIsSyncingPrices(false);
+        return;
+      }
+
+      const response = await fetch("/api/koreainvest/stock-prices-bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          token, 
+          appkey, 
+          appsecret, 
+          stock_codes: uniqueCodes,
+          api_type: koreaInvestApiType,
+          custom_url: koreaInvestCustomUrl
+        }),
+      });
+
+      if (!response.ok) {
+        const errRes = await response.json();
+        throw new Error(errRes.error || "시세 합동 동기화 중 에러가 발생했습니다.");
+      }
+
+      const results = await response.json();
+      const statusLog: typeof syncStatusList = [];
+
+      let updatedAccounts = [...accounts];
+      let updatedCount = 0;
+
+      uniqueCodes.forEach(code => {
+        const res = results[code];
+        const name = codesMap[code];
+
+        let oldPrice = 0;
+        for (const acc of accounts) {
+          const matched = acc.stocks.find(s => (s.ticker || '').trim() === code);
+          if (matched) {
+            oldPrice = matched.currentPrice;
+            break;
+          }
+        }
+
+        if (res && res.rt_cd === "0" && res.output) {
+          const newPrice = Number(res.output.prpr);
+          if (!isNaN(newPrice) && newPrice > 0) {
+            updatedAccounts = updatedAccounts.map(acc => {
+              const stocks = acc.stocks.map(s => {
+                if ((s.ticker || '').trim() === code) {
+                  return { ...s, currentPrice: newPrice };
+                }
+                return s;
+              });
+              return { ...acc, stocks };
+            });
+
+            statusLog.push({
+              ticker: code,
+              name,
+              status: 'success',
+              oldPrice,
+              newPrice
+            });
+            updatedCount++;
+          } else {
+            statusLog.push({
+              ticker: code,
+              name,
+              status: 'error',
+              oldPrice,
+              newPrice: oldPrice,
+              errorMsg: "조회 성공했으나 현재가 값 파싱 에러"
+            });
+          }
+        } else {
+          statusLog.push({
+            ticker: code,
+            name,
+            status: 'error',
+            oldPrice,
+            newPrice: oldPrice,
+            errorMsg: res?.msg1 || "한투 API 오류 응답"
+          });
+        }
+      });
+
+      if (updatedCount > 0) {
+        saveAccounts(updatedAccounts);
+      }
+
+      setSyncStatusList(statusLog);
+      
+      if (showUIMessages) {
+        if (updatedCount > 0) {
+          setKiSuccess(`총 ${updatedCount}개 종목의 시세를 성공적으로 실시간 동기화 완료했습니다.`);
+        } else {
+          setKiError("동기화가 가능한 종목코드를 불러오지 못했습니다. 종목 별 6자리 단축코드가 맞는지 대시보드를 검토하세요.");
+        }
+      }
+    } catch (err) {
+      console.error("한투 API 연동 갱신 실패:", err);
+      if (showUIMessages) {
+        setKiError("시세 동기화 실패: " + (err as Error).message);
+        alert("시세 동기화 실패: " + (err as Error).message);
+      }
+    } finally {
+      setIsSyncingPrices(false);
+    }
+  };
+
   // 계좌 추가 관련 상태
   const [showAddAccountForm, setShowAddAccountForm] = useState<boolean>(false);
   const [newAccountName, setNewAccountName] = useState<string>('');
@@ -1261,6 +1589,15 @@ export default function App() {
             <span>비밀번호 & 보안 설정 ({savedPassword ? '보안 활성' : '미설정'})</span>
           </button>
 
+          <button
+            onClick={() => setIsKiModalOpen(true)}
+            className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/20 transition-all mb-1 font-medium cursor-pointer"
+            title="한국투자증권 API를 구성하고 Bearer 연동 상태를 관리합니다."
+          >
+            <Sparkles className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+            <span>한투 주가 API 연동 ({koreaInvestAppKey ? '연동 완료' : '미연동'})</span>
+          </button>
+
 
           <button
             onClick={handleExportData}
@@ -1360,6 +1697,17 @@ export default function App() {
               <button
                 onClick={() => {
                   setIsMobileSidebarOpen(false);
+                  setIsKiModalOpen(true);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-emerald-400 hover:bg-emerald-950/20"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span>한투 주가 API ({koreaInvestAppKey ? '연동 완료' : '미연동'})</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsMobileSidebarOpen(false);
                   document.getElementById('backup-file-input-mobile')?.click();
                 }}
                 className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm text-indigo-400 hover:bg-indigo-950/20"
@@ -1416,6 +1764,35 @@ export default function App() {
               />
               <span className="text-[10px] text-slate-400 font-semibold">원</span>
             </div>
+
+            {/* 한국투자증권 실시간 주가 동기화 버튼 */}
+            {koreaInvestAppKey ? (
+              <button
+                type="button"
+                onClick={() => syncAllStockPrices(true)}
+                disabled={isSyncingPrices}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border outline-none cursor-pointer ${
+                  isSyncingPrices
+                    ? 'bg-slate-100 text-slate-400 border-slate-200'
+                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 hover:border-emerald-300'
+                }`}
+                title="등록된 6자리 종목코드를 기반으로 한국투자증권 실시간 시세를 조회하여 포트폴리오에 일괄 적용합니다."
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingPrices ? 'animate-spin text-slate-400' : 'text-emerald-600'}`} />
+                <span>{isSyncingPrices ? '시세 동기화 중...' : '국내주가 동기화'}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsKiModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border outline-none cursor-pointer bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-600 border-slate-200"
+                title="실시간 주가 가격을 받아오기 위해 한국투자증권 API 키를 연동해 주세요."
+              >
+                <Sparkles className="w-3.5 h-3.5 text-slate-400 animate-pulse" />
+                <span className="hidden sm:inline">실시간 한투 API 미연동</span>
+                <span className="sm:hidden">한투 API</span>
+              </button>
+            )}
 
             {/* 프로필 서브박스 */}
             <div className="flex items-center gap-2">
@@ -1754,6 +2131,349 @@ export default function App() {
                   setModalNewPasswordConfirm('');
                 }}
                 className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs py-1.5 px-3 rounded-lg transition-all cursor-pointer"
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 한국투자증권 API 연동 구성 및 주가 갱신 모달 */}
+      {isKiModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 font-sans text-slate-800">
+          <div className="bg-white rounded-2xl border border-slate-200 w-full max-w-2xl overflow-hidden shadow-2xl animate-scale-up max-h-[90vh] flex flex-col">
+            
+            {/* 모달 헤더 */}
+            <div className="bg-slate-950 text-white p-5 flex items-center justify-between border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-emerald-400" />
+                <h3 className="text-sm font-bold">한국투자증권 실시간 주가 API 연동</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsKiModalOpen(false);
+                  setKiError('');
+                  setKiSuccess('');
+                }}
+                className="text-slate-400 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 모달 바디 - 스크롤 지원 */}
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
+              {/* 성패 메시지 상자 */}
+              {kiError && (
+                <div className="text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-3 font-semibold">
+                  ⚠️ {kiError}
+                </div>
+              )}
+              {kiSuccess && (
+                <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-3 font-semibold">
+                  ✓ {kiSuccess}
+                </div>
+              )}
+
+              {/* 기본 가이드라인 */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs space-y-2 leading-relaxed">
+                <span className="font-bold text-slate-700 text-[13px] block">💡 한투 오픈 API 연동 핵심 사양</span>
+                <p className="text-slate-500">
+                  한국투자증권 개발자센터에서 발급받은 <strong>실전투자용 App Key</strong>와 <strong>App Secret</strong>을 저장합니다.
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-slate-500 pl-1">
+                  <li>입력한 API 키는 사용자 웰스가드 터미널의 <strong>보안장치 비밀번호(AES-256-GCM)로 암호화</strong>되어 안전하게 로컬 저장소에 보관됩니다.</li>
+                  <li>Bearer 인증 토큰은 발급 시점부터 <strong>24시간 동안 유효</strong>하며, 기간 만료 시 암호화된 API 키를 통하여 자동으로 갱신됩니다.</li>
+                  <li>각 계좌별로 등록된 <strong>6자리 한국 주식/ETF 단축코드(예: 005930)</strong>에 기하여 일괄 갱신을 실행할 수 있습니다.</li>
+                </ul>
+              </div>
+
+              {/* 실시간 서버 통신 상태 진도 분석 테스트 판넬 */}
+              <div className="bg-slate-900 text-slate-100 rounded-xl p-4 border border-slate-800 space-y-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <div>
+                    <span className="text-[12px] font-bold text-emerald-400 block">⚡ 한투 주요 서버 통신 정밀 진단</span>
+                    <span className="text-[10px] text-slate-400">클라우드 컨테이너와 한국투자증권 Open API 도메인 간의 도메인 확인(DNS) 및 실시간 접속 여부를 직접 진단합니다.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={runConnectionDiagnostics}
+                    disabled={isDiagnosing}
+                    className="bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:bg-slate-700 text-slate-950 font-bold text-xs px-3.5 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isDiagnosing ? 'animate-spin' : ''}`} />
+                    <span>{isDiagnosing ? '진단 요쳥 중...' : '연결 상태 직접 테스트'}</span>
+                  </button>
+                </div>
+
+                {diagnosticResults && (
+                  <div className="space-y-2 pt-1">
+                    <div className="text-[10px] text-slate-400 font-semibold border-b border-slate-800 pb-1">진단 통신 리포트 (현재 타임스탬프 기준)</div>
+                    <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                      {diagnosticResults.map((target, index) => (
+                        <div key={index} className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 flex flex-col md:flex-row md:items-center gap-2 justify-between">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold text-white">{target.name}</span>
+                              <span className="text-[9px] font-mono text-slate-500 bg-slate-900 px-1 py-0.5 rounded">{target.url}</span>
+                            </div>
+                            <span className="text-[10px] text-slate-400 block">{target.msg}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 shrink-0 justify-end md:justify-start">
+                            <span className="text-[10px] text-slate-500 font-mono">{target.duration}</span>
+                            {target.reachable ? (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
+                                연결 성공
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-[10px] font-bold border border-rose-500/30" title="상세 진단 내용을 확인하세요">
+                                연결 불가
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-[9.5px] text-amber-300 font-medium px-2 py-1.5 bg-amber-950/20 rounded-lg border border-amber-900/30">
+                      💡 <strong>진단 가이드:</strong> 만약 모의투자망 기본 포트(:29443) 또는 실전투자망 기본 포트(:9443)의 접속이 불가한 경우, <strong>"표준 포트 (443)"</strong> 옵션을 선택하여 API 요청을 보내면 보안 방화벽을 우회하여 정상 접속될 수 있습니다.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* API 키 설정 양식 */}
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  await saveKoreaInvestCredentials(kiInputAppKey, kiInputAppSecret, koreaInvestApiType, koreaInvestCustomUrl);
+                }}
+                className="space-y-4 border-b border-slate-100 pb-5"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1.5">
+                      한투 APP KEY *
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="발급받은 APP_KEY 입력"
+                      value={kiInputAppKey}
+                      onChange={(e) => {
+                        setKiInputAppKey(e.target.value);
+                        setKiError('');
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg py-2 px-3 text-xs text-slate-800 outline-none font-mono"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1.5">
+                      한투 APP SECRET *
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="발급받은 APP_SECRET 입력"
+                      value={kiInputAppSecret}
+                      onChange={(e) => {
+                        setKiInputAppSecret(e.target.value);
+                        setKiError('');
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg py-2 px-3 text-xs text-slate-800 outline-none font-mono"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1.5">
+                      서버유형 및 연동 타겟 도메인 *
+                    </label>
+                    <select
+                      value={koreaInvestApiType}
+                      onChange={(e) => {
+                        setKoreaInvestApiType(e.target.value);
+                        setKiError('');
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg py-2 px-3 text-xs text-slate-800 outline-none cursor-pointer"
+                    >
+                      <option value="real">실전투자망 기본 포트 (openapi.koreainvestment.com:9443)</option>
+                      <option value="real_443">실전투자망 표준 포트 (openapi.koreainvestment.com)</option>
+                      <option value="mock">모의투자망 기본 포트 (openapim.koreainvestment.com:29443)</option>
+                      <option value="mock_443">모의투자망 표준 포트 (openapim.koreainvestment.com)</option>
+                      <option value="legacy">기본 웹서버 도메인 (koreainvestment.com)</option>
+                      <option value="custom">기타 직접 설정 URL 주소</option>
+                    </select>
+                  </div>
+
+                  {koreaInvestApiType === 'custom' && (
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase text-slate-500 tracking-wider mb-1.5">
+                        직접 설정 API 주소 *
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="https:// 로 시작하는 주소 입력"
+                        value={koreaInvestCustomUrl}
+                        onChange={(e) => {
+                          setKoreaInvestCustomUrl(e.target.value);
+                          setKiError('');
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg py-2 px-3 text-xs text-slate-800 outline-none font-mono"
+                        required={koreaInvestApiType === 'custom'}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2 justify-end pt-2">
+                  <button
+                    type="submit"
+                    className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-all cursor-pointer"
+                  >
+                    API 인증키 및 서버 유형 설정 저장
+                  </button>
+                </div>
+              </form>
+
+              {/* 토큰 발급 및 테스트 제어반 */}
+              {koreaInvestAppKey && (
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase text-slate-400 tracking-wider block mb-1">한투 Bearer 토큰 라이프사이클 관리</span>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      {koreaInvestToken ? (
+                        <>
+                          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                          <span className="text-xs font-bold text-slate-700">인증 토큰 사용 가능</span>
+                          <span className="text-[11px] text-slate-400 ml-2">
+                            (발급: {new Date(koreaInvestTokenCreatedAt).toLocaleString('ko-KR')})
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                          <span className="text-xs font-bold text-slate-700">저장된 키 있음 (토큰 발급 대기 중 또는 만료됨)</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setKiError('');
+                        setKiSuccess('');
+                        try {
+                          await getOrRefreshKoreaInvestToken(true);
+                          setKiSuccess("한국투자증권 API Bearer 토큰이 정상적으로 신규 발급 및 암호화 보관 완료되었습니다!");
+                        } catch (err) {
+                          setKiError("토큰 수동 발급 실패: " + (err as Error).message);
+                        }
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>신규 토큰 발급 (24H 갱신)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => syncAllStockPrices(true)}
+                      disabled={isSyncingPrices}
+                      className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      {isSyncingPrices ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>시세 조회 중...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Activity className="w-3.5 h-3.5 animate-pulse" />
+                          <span>실시간 주가 수동 동기화</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 시세 동기화 로그 및 변동 결과 분석 판넬 */}
+              {syncStatusList.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <History className="w-3.5 h-3.5 text-indigo-600" />
+                      최근 주가 동기화 실행 로그 ({syncStatusList.length}건)
+                    </h4>
+                    <span className="text-[10px] text-slate-400 font-medium">단위: KRW(원)</span>
+                  </div>
+
+                  <div className="border border-slate-100 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                        <tr>
+                          <th className="p-2.5">코드</th>
+                          <th className="p-2.5">종목명</th>
+                          <th className="p-2.5 text-right">기존단가</th>
+                          <th className="p-2.5 text-right">현재실시간시세</th>
+                          <th className="p-2.5 text-center">변동율</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {syncStatusList.map((item, idx) => {
+                          const diff = item.newPrice - item.oldPrice;
+                          const rateStr = item.oldPrice === 0 
+                            ? "0.00%" 
+                            : `${diff > 0 ? '+' : ''}${((diff / item.oldPrice) * 100).toFixed(2)}%`;
+                          const textColorClass = diff > 0 
+                            ? 'text-rose-600 font-semibold' 
+                            : diff < 0 
+                              ? 'text-blue-600 font-semibold' 
+                              : 'text-slate-500';
+
+                          return (
+                            <tr key={`${item.ticker}-${idx}`} className="hover:bg-slate-50/50">
+                              <td className="p-2.5 font-mono text-slate-400 font-medium">{item.ticker}</td>
+                              <td className="p-2.5 font-semibold text-slate-700">{item.name}</td>
+                              <td className="p-2.5 text-right font-mono text-slate-500">{item.oldPrice.toLocaleString() || '0'}</td>
+                              <td className="p-2.5 text-right font-mono text-slate-800 font-semibold">
+                                {item.status === 'success' ? (
+                                  `${item.newPrice.toLocaleString()}`
+                                ) : (
+                                  <span className="text-rose-500 text-[10px]" title={item.errorMsg}>오류: {item.errorMsg}</span>
+                                )}
+                              </td>
+                              <td className={`p-2.5 text-center font-mono text-[11px] ${textColorClass}`}>
+                                {item.status === 'success' ? rateStr : '-'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* 모달 푸터 */}
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsKiModalOpen(false);
+                  setKiError('');
+                  setKiSuccess('');
+                }}
+                className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs py-1.5 px-4 rounded-lg transition-all cursor-pointer"
               >
                 닫기
               </button>
