@@ -706,7 +706,8 @@ export default function App() {
         }
 
         if (res && res.rt_cd === "0" && res.output) {
-          const newPrice = Number(res.output.prpr);
+          const rawPrice = res.output.stck_prpr || res.output.prpr;
+          const newPrice = Number(rawPrice);
           if (!isNaN(newPrice) && newPrice > 0) {
             updatedAccounts = updatedAccounts.map(acc => {
               const stocks = acc.stocks.map(s => {
@@ -733,7 +734,7 @@ export default function App() {
               status: 'error',
               oldPrice,
               newPrice: oldPrice,
-              errorMsg: "조회 성공했으나 현재가 값 파싱 에러"
+              errorMsg: `조회 성공했으나 현재가 값 파싱 에러 (받은 값: ${rawPrice}, 데이터: ${JSON.stringify(res.output)})`
             });
           }
         } else {
