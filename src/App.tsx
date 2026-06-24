@@ -652,8 +652,8 @@ export default function App() {
       const codesMap: Record<string, string> = {};
       accounts.forEach(acc => {
         acc.stocks.forEach(s => {
-          const ticker = (s.ticker || '').trim();
-          if (/^\d{6}$/.test(ticker)) {
+          const ticker = (s.ticker || '').trim().toUpperCase();
+          if (/^[A-Z0-9]{6}$/.test(ticker)) {
             codesMap[ticker] = s.name;
           }
         });
@@ -662,7 +662,7 @@ export default function App() {
       const uniqueCodes = Object.keys(codesMap);
       if (uniqueCodes.length === 0) {
         if (showUIMessages) {
-          alert("포트폴리오에 등록된 유효한 국내주식 종목코드(6자리 숫자)가 없습니다.");
+          alert("포트폴리오에 등록된 유효한 국내주식 종목코드(6자리 숫자 또는 영문 혼합 코드)가 없습니다.");
         }
         setIsSyncingPrices(false);
         return;
