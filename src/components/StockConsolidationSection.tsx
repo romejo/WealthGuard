@@ -70,17 +70,27 @@ export default function StockConsolidationSection({ accounts, exchangeRate, onUp
     setEditingPriceKey(null);
   };
 
-  const handleStockNameClick = (ticker: string, e: React.MouseEvent) => {
+  const handleStockNameClick = (ticker: string, isForeign: boolean, e: React.MouseEvent) => {
     e.stopPropagation(); // prevent expanding/collapsing the accordion row
     if (!ticker || ticker === '코드없음') return;
     
-    // Clean ticker (e.g. "005930" or "A005930")
     const cleanTicker = ticker.trim().toUpperCase();
     
-    // Daum quotes format: A + 6-character code
-    const formattedTicker = cleanTicker.startsWith('A') ? cleanTicker : `A${cleanTicker}`;
-    const url = `https://finance.daum.net/quotes/${formattedTicker}#home`;
-    window.open(url, '_blank');
+    if (isForeign) {
+      let exchange = 'NASDAQ';
+      const nyseTickers = ['JPM', 'V', 'UNH', 'JNJ', 'DIS', 'KO', 'WMT', 'XOM', 'NKE', 'PFE', 'PG', 'BAC', 'CVX', 'MRK', 'HD', 'MCD', 'LMT', 'BA', 'GS', 'T', 'VZ', 'BRK.A', 'BRK.B'];
+      if (nyseTickers.includes(cleanTicker)) {
+        exchange = 'NYSE';
+      }
+      const formattedTicker = cleanTicker.includes(':') ? cleanTicker : `${cleanTicker}:${exchange}`;
+      const url = `https://www.google.com/finance/beta/quote/${formattedTicker}?hl=ko`;
+      window.open(url, '_blank');
+    } else {
+      // Daum quotes format: A + 6-character code
+      const formattedTicker = cleanTicker.startsWith('A') ? cleanTicker : `A${cleanTicker}`;
+      const url = `https://finance.daum.net/quotes/${formattedTicker}#home`;
+      window.open(url, '_blank');
+    }
   };
 
   // Filter accounts by group: general stock accounts vs pension
@@ -486,9 +496,9 @@ export default function StockConsolidationSection({ accounts, exchangeRate, onUp
                       <td className="py-3.5 px-4">
                         <div className="flex flex-col">
                           <span 
-                            onClick={(e) => handleStockNameClick(cs.ticker, e)}
+                            onClick={(e) => handleStockNameClick(cs.ticker, cs.isForeign, e)}
                             className="font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer text-xs max-w-[200px] truncate flex items-center gap-1.5 group/name"
-                            title={`${cs.name} (클릭 시 다음 금융 상세 페이지 새창 열기)`}
+                            title={`${cs.name} (클릭 시 상세 정보 새창 열기)`}
                           >
                             <span className="truncate">{cs.name}</span>
                             <ExternalLink className="w-3.5 h-3.5 text-indigo-400 opacity-60 group-hover/name:opacity-100 transition-opacity shrink-0" />
