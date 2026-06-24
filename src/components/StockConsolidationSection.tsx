@@ -70,6 +70,19 @@ export default function StockConsolidationSection({ accounts, exchangeRate, onUp
     setEditingPriceKey(null);
   };
 
+  const handleStockNameClick = (ticker: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // prevent expanding/collapsing the accordion row
+    if (!ticker || ticker === '코드없음') return;
+    
+    // Clean ticker (e.g. "005930" or "A005930")
+    const cleanTicker = ticker.trim().toUpperCase();
+    
+    // Daum quotes format: A + 6-character code
+    const formattedTicker = cleanTicker.startsWith('A') ? cleanTicker : `A${cleanTicker}`;
+    const url = `https://finance.daum.net/quotes/${formattedTicker}#home`;
+    window.open(url, '_blank');
+  };
+
   // Filter accounts by group: general stock accounts vs pension
   const filteredAccounts = accounts.filter((acc) => {
     const isPension = /(IRP|연금|retirement|pension)/i.test(acc.name);
@@ -472,8 +485,13 @@ export default function StockConsolidationSection({ accounts, exchangeRate, onUp
                       {/* Stock Name / Ticker */}
                       <td className="py-3.5 px-4">
                         <div className="flex flex-col">
-                          <span className="font-bold text-slate-800 text-xs max-w-[200px] truncate" title={cs.name}>
-                            {cs.name}
+                          <span 
+                            onClick={(e) => handleStockNameClick(cs.ticker, e)}
+                            className="font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer text-xs max-w-[200px] truncate flex items-center gap-1.5 group/name"
+                            title={`${cs.name} (클릭 시 다음 금융 상세 페이지 새창 열기)`}
+                          >
+                            <span className="truncate">{cs.name}</span>
+                            <ExternalLink className="w-3.5 h-3.5 text-indigo-400 opacity-60 group-hover/name:opacity-100 transition-opacity shrink-0" />
                           </span>
                           <span className="text-[10px] text-slate-400 font-bold font-mono tracking-wider mt-0.5 flex items-center gap-1">
                             {cs.isForeign ? (
