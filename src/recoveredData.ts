@@ -4,150 +4,120 @@ export const RECOVERED_DATA = {
   version: "1.0",
   accounts: [
     {
-      id: "toss",
-      name: "토스 주식",
-      cash: 22611010,
-      stocks: [
+      "id": "toss",
+      "name": "토스 주식",
+      "cash": 66000000,
+      "stocks": [
         {
-          id: "t4",
-          name: "삼성전자",
-          purchasePrice: 317500,
-          quantity: 24,
-          currentPrice: 354000,
-          category: "국내주식",
-          isForeign: false,
-          ticker: "005930"
+          "id": "stock_1782176366863_8st8b",
+          "name": "마이크로소프트",
+          "ticker": "MSFT",
+          "purchasePrice": 378.67,
+          "quantity": 9,
+          "currentPrice": 383,
+          "category": "해외주식",
+          "isForeign": true
         },
         {
-          id: "t8",
-          name: "SK하이닉스",
-          purchasePrice: 2140818,
-          quantity: 5,
-          currentPrice: 2764000,
-          category: "국내주식",
-          isForeign: false,
-          ticker: "000660"
+          "id": "stock_1782176411088_mo896",
+          "name": "메타",
+          "ticker": "META",
+          "purchasePrice": 574.07,
+          "quantity": 6,
+          "currentPrice": 553.8,
+          "category": "해외주식",
+          "isForeign": true
         },
         {
-          id: "t9",
-          name: "엔비디아",
-          purchasePrice: 216.67,
-          quantity: 66,
-          currentPrice: 210.69,
-          category: "해외주식",
-          isForeign: true,
-          ticker: "NVDA"
+          "id": "stock_1782179304238_3ee6r",
+          "name": "엔비디아",
+          "ticker": "NVDA",
+          "purchasePrice": 216.67,
+          "quantity": 17,
+          "currentPrice": 193.2,
+          "category": "해외주식",
+          "isForeign": true
         },
         {
-          id: "stock_1780301211324_7k9eh",
-          name: "달러",
-          purchasePrice: 169.33,
-          quantity: 1,
-          currentPrice: 169.33,
-          category: "현금",
-          isForeign: true
+          "id": "stock_1782348175671_eiun9",
+          "name": "스페이스X",
+          "ticker": "SPCX",
+          "purchasePrice": 154.11,
+          "quantity": 21,
+          "currentPrice": 154.38,
+          "category": "해외주식",
+          "isForeign": true
         },
         {
-          id: "stock_1780546845890_4gebf",
-          name: "삼성전자우",
-          ticker: "005935",
-          purchasePrice: 202150,
-          quantity: 36,
-          currentPrice: 222000,
-          category: "국내주식",
-          isForeign: false
+          "id": "stock_1782348268507_4oy90",
+          "name": "달러",
+          "purchasePrice": 101.92,
+          "quantity": 1,
+          "currentPrice": 101.92,
+          "category": "해외주식",
+          "isForeign": true
         },
         {
-          id: "stock_1781505442447_53ddq",
-          name: "한전KPS",
-          ticker: "051600",
-          purchasePrice: 51737,
-          quantity: 200,
-          currentPrice: 49700,
-          category: "국내주식",
-          isForeign: false
+          "id": "stock_1782693360789_8d3o3",
+          "name": "삼성전자",
+          "ticker": "005930",
+          "purchasePrice": 323750,
+          "quantity": 20,
+          "currentPrice": 321000,
+          "category": "국내주식",
+          "isForeign": false
         },
         {
-          id: "stock_1781763990470_o8i36",
-          name: "NAVER",
-          ticker: "035420",
-          purchasePrice: 235555,
-          quantity: 27,
-          currentPrice: 229500,
-          category: "국내주식",
-          isForeign: false
+          "id": "stock_1782693392717_uj6j0",
+          "name": "SK하이닉스",
+          "ticker": "000660",
+          "purchasePrice": 2557500,
+          "quantity": 2,
+          "currentPrice": 2572000,
+          "category": "국내주식",
+          "isForeign": false
         }
       ]
     },
     {
-      id: "meritz",
-      name: "메리츠 주식",
-      cash: 0,
-      stocks: [
+      "id": "meritz",
+      "name": "메리츠 주식",
+      "cash": 0,
+      "stocks": [
         {
-          id: "m1",
-          name: "SK하이닉스",
-          purchasePrice: 1768273,
-          quantity: 3,
-          currentPrice: 2764000,
-          category: "국내주식",
-          isForeign: false,
-          ticker: "000660"
+          "id": "m7",
+          "name": "동아쏘시오홀딩스",
+          "purchasePrice": 92413,
+          "quantity": 55,
+          "currentPrice": 77900,
+          "category": "국내주식",
+          "isForeign": false,
+          "ticker": "000640"
         },
         {
-          id: "m2",
-          name: "삼성전자",
-          purchasePrice: 299708,
-          quantity: 41,
-          currentPrice: 354000,
-          category: "국내주식",
-          isForeign: false,
-          ticker: "005930"
-        },
-        {
-          id: "m7",
-          name: "동아쏘시오홀딩스",
-          purchasePrice: 92413,
-          quantity: 55,
-          currentPrice: 79600,
-          category: "국내주식",
-          isForeign: false,
-          ticker: "000640"
-        },
-        {
-          id: "stock_1781054058393_tyujv",
-          name: "삼성전자우",
-          ticker: "005935",
-          purchasePrice: 201919,
-          quantity: 37,
-          currentPrice: 222000,
-          category: "국내주식",
-          isForeign: false
+          "id": "stock_1782122130715_jt0hp",
+          "name": "SK하이닉스",
+          "ticker": "000660",
+          "purchasePrice": 1768273,
+          "quantity": 2,
+          "currentPrice": 2572000,
+          "category": "국내주식",
+          "isForeign": false
         }
       ]
     },
     {
-      id: "hantoo_irp",
-      name: "한투 IRP",
-      cash: 0,
-      stocks: [
+      "id": "hantoo_irp",
+      "name": "한투 IRP",
+      "cash": 0,
+      "stocks": [
         {
-          id: "stock_1780621512972_899sg",
-          name: "HANARO 원자력iSelect",
-          ticker: "434730",
-          purchasePrice: 67000,
-          quantity: 14,
-          currentPrice: 72900,
-          category: "ETF",
-          isForeign: false
-        },
-        {
-          "id": "stock_1780621567259_6v3az",
-          "name": "Tiger 반도체TOP10",
-          "ticker": "396500",
-          "purchasePrice": 48525,
-          "quantity": 19,
-          "currentPrice": 53750,
+          "id": "stock_1780621512972_899sg",
+          "name": "HANARO 원자력iSelect",
+          "ticker": "434730",
+          "purchasePrice": 67000,
+          "quantity": 14,
+          "currentPrice": 63715,
           "category": "ETF",
           "isForeign": false
         },
@@ -157,7 +127,7 @@ export const RECOVERED_DATA = {
           "ticker": "434060",
           "purchasePrice": 18601,
           "quantity": 598,
-          "currentPrice": 18560,
+          "currentPrice": 18260,
           "category": "ETF",
           "isForeign": false
         },
@@ -165,9 +135,9 @@ export const RECOVERED_DATA = {
           "id": "stock_1781846237309_mbvp3",
           "name": "Tiger 미국우주액티브",
           "ticker": "0183J0",
-          "purchasePrice": 10805,
-          "quantity": 522,
-          "currentPrice": 10960,
+          "purchasePrice": 10472,
+          "quantity": 730,
+          "currentPrice": 9805,
           "category": "ETF",
           "isForeign": false
         },
@@ -177,18 +147,18 @@ export const RECOVERED_DATA = {
           "ticker": "305720",
           "purchasePrice": 16585,
           "quantity": 301,
-          "currentPrice": 16935,
+          "currentPrice": 15500,
           "category": "ETF",
           "isForeign": false
         },
         {
-          "id": "stock_1781846306217_qwk2l",
-          "name": "KoAct 바이오헬스케어액티브",
-          "ticker": "462900",
-          "purchasePrice": 16085,
-          "quantity": 310,
-          "currentPrice": 16380,
-          "category": "ETF",
+          "id": "stock_1782349178171_v5yd9",
+          "name": "TIGER 머니마켓액티브",
+          "ticker": "0043B0",
+          "purchasePrice": 102814,
+          "quantity": 40,
+          "currentPrice": 102830,
+          "category": "현금",
           "isForeign": false
         }
       ]
@@ -196,24 +166,24 @@ export const RECOVERED_DATA = {
     {
       "id": "nh_irp",
       "name": "농협 IRP",
-      "cash": 0,
+      "cash": 2752673,
       "stocks": [
         {
           "id": "nh1",
-          "name": "Tiger 반도체TOP10",
+          "name": "TIGER 반도체TOP10",
           "purchasePrice": 45703,
-          "quantity": 327,
-          "currentPrice": 53750,
+          "quantity": 93,
+          "currentPrice": 49255,
           "category": "ETF",
           "isForeign": false,
           "ticker": "396500"
         },
         {
           "id": "nh2",
-          "name": "Tiger 머니마켓액티브",
-          "purchasePrice": 102689,
-          "quantity": 214,
-          "currentPrice": 102765,
+          "name": "TIGER 머니마켓액티브",
+          "purchasePrice": 102757,
+          "quantity": 193,
+          "currentPrice": 102830,
           "category": "현금",
           "isForeign": false,
           "ticker": "0043B0"
@@ -221,9 +191,9 @@ export const RECOVERED_DATA = {
         {
           "id": "stock_1780301713710_kunf4",
           "name": "KODEX 코스닥150",
-          "purchasePrice": 17695,
-          "quantity": 303,
-          "currentPrice": 16965,
+          "purchasePrice": 16088,
+          "quantity": 318,
+          "currentPrice": 16450,
           "category": "ETF",
           "isForeign": false,
           "ticker": "229200"
@@ -231,9 +201,9 @@ export const RECOVERED_DATA = {
         {
           "id": "stock_1780537916844_8frto",
           "name": "HANARO 원자력iSelect",
-          "purchasePrice": 67989,
-          "quantity": 171,
-          "currentPrice": 72900,
+          "purchasePrice": 66987,
+          "quantity": 55,
+          "currentPrice": 63715,
           "category": "ETF",
           "isForeign": false,
           "ticker": "434730"
@@ -242,19 +212,19 @@ export const RECOVERED_DATA = {
           "id": "stock_1780549564817_hade2",
           "name": "KODEX TDF2050액티브적격",
           "ticker": "434060",
-          "purchasePrice": 18423,
-          "quantity": 499,
-          "currentPrice": 18560,
+          "purchasePrice": 18414,
+          "quantity": 930,
+          "currentPrice": 18260,
           "category": "ETF",
           "isForeign": false
         },
         {
           "id": "stock_1780625314702_bza54",
-          "name": "Tiger 미국S&P500",
+          "name": "TIGER 미국S&P500",
           "ticker": "360750",
-          "purchasePrice": 28133,
-          "quantity": 155,
-          "currentPrice": 28355,
+          "purchasePrice": 28125,
+          "quantity": 159,
+          "currentPrice": 28285,
           "category": "ETF",
           "isForeign": false
         },
@@ -262,9 +232,9 @@ export const RECOVERED_DATA = {
           "id": "stock_1781569918996_nl245",
           "name": "KODEX 2차전지산업",
           "ticker": "305720",
-          "purchasePrice": 17635,
-          "quantity": 332,
-          "currentPrice": 16935,
+          "purchasePrice": 16672,
+          "quantity": 241,
+          "currentPrice": 15500,
           "category": "ETF",
           "isForeign": false
         },
@@ -272,9 +242,9 @@ export const RECOVERED_DATA = {
           "id": "stock_1781569984425_juz9q",
           "name": "KODEX 로봇액티브",
           "ticker": "445290",
-          "purchasePrice": 40879,
-          "quantity": 120,
-          "currentPrice": 38935,
+          "purchasePrice": 36461,
+          "quantity": 167,
+          "currentPrice": 33755,
           "category": "ETF",
           "isForeign": false
         },
@@ -282,19 +252,19 @@ export const RECOVERED_DATA = {
           "id": "stock_1781570034484_7qcz9",
           "name": "KoAct 바이오헬스케어액티브",
           "ticker": "462900",
-          "purchasePrice": 17316,
-          "quantity": 286,
-          "currentPrice": 16380,
+          "purchasePrice": 15889,
+          "quantity": 304,
+          "currentPrice": 17835,
           "category": "ETF",
           "isForeign": false
         },
         {
           "id": "stock_1781570085708_vmbp6",
-          "name": "Tiger 미국우주액티브",
+          "name": "TIGER 미국우주테크",
           "ticker": "0183J0",
-          "purchasePrice": 11572,
-          "quantity": 915,
-          "currentPrice": 10960,
+          "purchasePrice": 10992,
+          "quantity": 340,
+          "currentPrice": 9805,
           "category": "ETF",
           "isForeign": false
         },
@@ -302,9 +272,49 @@ export const RECOVERED_DATA = {
           "id": "stock_1781591065360_dumhn",
           "name": "SOL AI반도체소부장",
           "ticker": "455850",
-          "purchasePrice": 31228,
-          "quantity": 221,
-          "currentPrice": 29900,
+          "purchasePrice": 28852,
+          "quantity": 277,
+          "currentPrice": 27735,
+          "category": "ETF",
+          "isForeign": false
+        },
+        {
+          "id": "stock_1782108520057_5jiy1",
+          "name": "TIGER 조선TOP10",
+          "ticker": "494670",
+          "purchasePrice": 25830,
+          "quantity": 222,
+          "currentPrice": 24830,
+          "category": "ETF",
+          "isForeign": false
+        },
+        {
+          "id": "stock_1782175919235_p5g22",
+          "name": "PLUS K방산",
+          "ticker": "449450",
+          "purchasePrice": 62270,
+          "quantity": 62,
+          "currentPrice": 58375,
+          "category": "ETF",
+          "isForeign": false
+        },
+        {
+          "id": "stock_1782269333361_5tkva",
+          "name": "TIGER 나스닥100",
+          "ticker": "133690",
+          "purchasePrice": 200569,
+          "quantity": 22,
+          "currentPrice": 200065,
+          "category": "ETF",
+          "isForeign": false
+        },
+        {
+          "id": "stock_1782348611475_25e5l",
+          "name": "SOL 미국양자컴퓨팅TOP10",
+          "ticker": "0023A0",
+          "purchasePrice": 33355,
+          "quantity": 58,
+          "currentPrice": 32345,
           "category": "ETF",
           "isForeign": false
         }
@@ -313,25 +323,15 @@ export const RECOVERED_DATA = {
     {
       "id": "nh_pension",
       "name": "농협 연금",
-      "cash": 0,
+      "cash": 85502,
       "stocks": [
-        {
-          "id": "stock_1781845559747_i0lyv",
-          "name": "KoAct 바이오헬스케어액티브",
-          "ticker": "462900",
-          "purchasePrice": 16145,
-          "quantity": 185,
-          "currentPrice": 16380,
-          "category": "ETF",
-          "isForeign": false
-        },
         {
           "id": "stock_1781845580194_gu71v",
           "name": "KODEX 2차전지산업",
           "ticker": "305720",
-          "purchasePrice": 16625,
-          "quantity": 180,
-          "currentPrice": 16935,
+          "purchasePrice": 16319,
+          "quantity": 244,
+          "currentPrice": 15500,
           "category": "ETF",
           "isForeign": false
         },
@@ -341,8 +341,18 @@ export const RECOVERED_DATA = {
           "ticker": "0183J0",
           "purchasePrice": 10795,
           "quantity": 236,
-          "currentPrice": 10960,
+          "currentPrice": 9805,
           "category": "ETF",
+          "isForeign": false
+        },
+        {
+          "id": "stock_1782349097235_qlj37",
+          "name": "KODEX 머니마켓액티브",
+          "ticker": "488770",
+          "purchasePrice": 104715,
+          "quantity": 19,
+          "currentPrice": 104747,
+          "category": "현금",
           "isForeign": false
         }
       ]
@@ -352,107 +362,331 @@ export const RECOVERED_DATA = {
       "name": "신한투자",
       "stocks": [
         {
-          "id": "stock_1780537642184_m4z1v",
+          "id": "stock_1782436180565_pgna0",
           "name": "삼성전자",
-          "purchasePrice": 323889,
-          "quantity": 45,
-          "currentPrice": 354000,
+          "ticker": "005930",
+          "purchasePrice": 333524,
+          "quantity": 60,
+          "currentPrice": 321000,
           "category": "국내주식",
-          "isForeign": false,
-          "ticker": "005930"
+          "isForeign": false
         },
         {
-          "id": "stock_1780537703351_sl0a6",
+          "id": "stock_1782436188132_6i6b2",
           "name": "SK하이닉스",
-          "purchasePrice": 2107000,
-          "quantity": 4,
-          "currentPrice": 2764000,
-          "category": "국내주식",
-          "isForeign": false,
-          "ticker": "000660"
-        },
-        {
-          "id": "stock_1780537787985_leyxu",
-          "name": "삼성전자우",
-          "purchasePrice": 205592,
-          "quantity": 76,
-          "currentPrice": 222000,
-          "category": "국내주식",
-          "isForeign": false,
-          "ticker": "005935"
-        },
-        {
-          "id": "stock_1781505742452_xihtk",
-          "name": "한전기술",
-          "ticker": "052690",
-          "purchasePrice": 130897,
-          "quantity": 79,
-          "currentPrice": 123700,
+          "ticker": "000660",
+          "purchasePrice": 2684524,
+          "quantity": 7,
+          "currentPrice": 2572000,
           "category": "국내주식",
           "isForeign": false
         }
       ],
-      "cash": 18395876
+      "cash": 58135167
+    },
+    {
+      "id": "acc_1782699057852_wd33",
+      "name": "한국투자",
+      "stocks": [
+        {
+          "id": "stock_1782699087473_1g78j",
+          "name": "삼성전자",
+          "ticker": "005930",
+          "purchasePrice": 323092,
+          "quantity": 130,
+          "currentPrice": 321000,
+          "category": "국내주식",
+          "isForeign": false
+        },
+        {
+          "id": "stock_1782699116201_udqu8",
+          "name": "동아쏘시오홀딩스",
+          "ticker": "000640",
+          "purchasePrice": 104720,
+          "quantity": 1063,
+          "currentPrice": 77900,
+          "category": "국내주식",
+          "isForeign": false
+        }
+      ],
+      "cash": 0
     }
   ],
-  exchangeRate: 1527,
-  segmentBaseAmounts: {
+  "exchangeRate": 1542.3,
+  "segmentBaseAmounts": {
     "농협 IRP": 90400755,
     "농협 연금": 10010000,
     "한투 IRP": 27000000,
-    "신한투자": 68600000,
-    "메리츠 주식": 32425042,
-    "토스 국내": 42824387,
-    "토스 해외": 15289914
+    "신한투자": 92983579,
+    "메리츠 주식": 6808621,
+    "토스 해외": 15289914,
+    "한국투자": 170000000
   },
-  rebalancingTargets: [
-    { "name": "동아쏘시오홀딩스", "targetWeight": 0 },
-    { "name": "엔비디아", "targetWeight": 6.3 },
-    { "name": "삼성전자", "targetWeight": 5 },
-    { "name": "하이닉스", "targetWeight": 7 },
-    { "name": "리노공업", "targetWeight": 1.1 },
-    { "name": "HPSP", "targetWeight": 1.4 },
-    { "name": "한화오션", "targetWeight": 2 },
-    { "name": "HD현대일렉트릭", "targetWeight": 3 },
-    { "name": "두산에너빌리티", "targetWeight": 3 },
-    { "name": "DB손해보험", "targetWeight": 3.2 },
-    { "name": "리가켐", "targetWeight": 1.4 },
-    { "name": "에스티팜", "targetWeight": 2.4 },
-    { "name": "Tiger 반도체TOP10", "targetWeight": 7 },
-    { "name": "Tiger 머니마켓액티브", "targetWeight": 15.4 },
-    { "name": "Tiger 미국초단기국채", "targetWeight": 0 },
-    { "name": "ACE KRX금현물", "targetWeight": 7.1 },
-    { "name": "KODEX은선물", "targetWeight": 4.5 },
-    { "name": "1Q은액티브", "targetWeight": 0 },
-    { "name": "Tiger KRX금현물", "targetWeight": 0 },
-    { "name": "현금", "targetWeight": 23.5 },
-    { "name": "KODEX TDF2050", "targetWeight": 5.2 },
-    { "name": "Tiger 필라델피아반도체", "targetWeight": 10 },
-    { "name": "Tiger S&P500", "targetWeight": 10 },
-    { "name": "Tiger 나스닥100", "targetWeight": 10 },
-    { "name": "KODEX 코스피 200 TR", "targetWeight": 10 },
-    { "name": "달러", "targetWeight": 0 },
-    { "name": "KODEX 코스닥150", "targetWeight": 0 },
-    { "name": "LG전자", "targetWeight": 0 },
-    { "name": "리가켐바이오", "targetWeight": 0 },
-    { "name": "SK하이닉스", "targetWeight": 0 },
-    { "name": "삼성전자우", "targetWeight": 0 },
-    { "name": "HANARO 원자력iSelect", "targetWeight": 0 },
-    { "name": "KODEX TDF2050액티브적격", "targetWeight": 0 }
+  "rebalancingTargets": [
+    {
+      "name": "동아쏘시오홀딩스",
+      "targetWeight": 0
+    },
+    {
+      "name": "엔비디아",
+      "targetWeight": 6.3
+    },
+    {
+      "name": "삼성전자",
+      "targetWeight": 5
+    },
+    {
+      "name": "하이닉스",
+      "targetWeight": 7
+    },
+    {
+      "name": "리노공업",
+      "targetWeight": 1.1
+    },
+    {
+      "name": "HPSP",
+      "targetWeight": 1.4
+    },
+    {
+      "name": "한화오션",
+      "targetWeight": 2
+    },
+    {
+      "name": "HD현대일렉트릭",
+      "targetWeight": 3
+    },
+    {
+      "name": "두산에너빌리티",
+      "targetWeight": 3
+    },
+    {
+      "name": "DB손해보험",
+      "targetWeight": 3.2
+    },
+    {
+      "name": "리가켐",
+      "targetWeight": 1.4
+    },
+    {
+      "name": "에스티팜",
+      "targetWeight": 2.4
+    },
+    {
+      "name": "Tiger 반도체TOP10",
+      "targetWeight": 7
+    },
+    {
+      "name": "Tiger 머니마켓액티브",
+      "targetWeight": 15.4
+    },
+    {
+      "name": "Tiger 미국초단기국채",
+      "targetWeight": 0
+    },
+    {
+      "name": "ACE KRX금현물",
+      "targetWeight": 7.1
+    },
+    {
+      "name": "KODEX은선물",
+      "targetWeight": 4.5
+    },
+    {
+      "name": "1Q은액티브",
+      "targetWeight": 0
+    },
+    {
+      "name": "Tiger KRX금현물",
+      "targetWeight": 0
+    },
+    {
+      "name": "현금",
+      "targetWeight": 23.5
+    },
+    {
+      "name": "KODEX TDF2050",
+      "targetWeight": 5.2
+    },
+    {
+      "name": "Tiger 필라델피아반도체",
+      "targetWeight": 10
+    },
+    {
+      "name": "Tiger S&P500",
+      "targetWeight": 10
+    },
+    {
+      "name": "Tiger 나스닥100",
+      "targetWeight": 10
+    },
+    {
+      "name": "KODEX 코스피 200 TR",
+      "targetWeight": 10
+    },
+    {
+      "name": "달러",
+      "targetWeight": 0
+    },
+    {
+      "name": "KODEX 코스닥150",
+      "targetWeight": 0
+    },
+    {
+      "name": "LG전자",
+      "targetWeight": 0
+    },
+    {
+      "name": "리가켐바이오",
+      "targetWeight": 0
+    },
+    {
+      "name": "SK하이닉스",
+      "targetWeight": 0
+    },
+    {
+      "name": "삼성전자우",
+      "targetWeight": 0
+    },
+    {
+      "name": "HANARO 원자력iSelect",
+      "targetWeight": 0
+    },
+    {
+      "name": "KODEX TDF2050액티브적격",
+      "targetWeight": 0
+    }
   ],
-  assetTrendsDaily: [
-    { "date": "06월 08일", "국내주식": 189918650, "해외주식": 21396806, "금은": 32016140, "현금": 55587600 },
-    { "date": "06월 09일", "국내주식": 174107465, "해외주식": 21591955, "금은": 32193740, "현금": 85053450 },
-    { "date": "06월 10일", "국내주식": 177268915, "해외주식": 21224018, "금은": 31162720, "현금": 75538262 },
-    { "date": "06월 11일", "국내주식": 187609940, "해외주식": 20799163, "금은": 30471900, "현금": 67782096 },
-    { "date": "06월 12일", "국내주식": 153209015, "해외주식": 62677219, "금은": 31296720, "현금": 68042583 },
-    { "date": "06월 15일", "국내주식": 155853685, "해외주식": 32603295, "금은": 32226740, "현금": 103306129 },
-    { "date": "06월 16일", "국내주식": 167374690, "해외주식": 36836926, "금은": 32320520, "현금": 90434666 },
-    { "date": "06월 17일", "국내주식": 168676280, "해외주식": 38181990, "금은": 32504640, "현금": 100054614 },
-    { "date": "06월 18일", "국내주식": 177567415, "해외주식": 37862491, "금은": 32205160, "현금": 95321803 },
-    { "date": "06월 19일", "국내주식": 210538230, "해외주식": 64325185, "금은": 0, "현금": 63257163 }
+  "assetTrendsDaily": [
+    {
+      "date": "06월 08일",
+      "국내주식": 126081000,
+      "해외주식": 21135166,
+      "ETF": 63837650,
+      "금은": 32016140,
+      "현금": 55849240
+    },
+    {
+      "date": "06월 09일",
+      "국내주식": 118573000,
+      "해외주식": 21226498,
+      "ETF": 72155400,
+      "금은": 32128980,
+      "현금": 62755014
+    },
+    {
+      "date": "06월 10일",
+      "국내주식": 92130500,
+      "해외주식": 20963250,
+      "ETF": 85138415,
+      "금은": 31162720,
+      "현금": 75799030
+    },
+    {
+      "date": "06월 11일",
+      "국내주식": 99330500,
+      "해외주식": 20538395,
+      "ETF": 88279440,
+      "금은": 30471900,
+      "현금": 68042864
+    },
+    {
+      "date": "06월 12일",
+      "국내주식": 103802000,
+      "해외주식": 20563559,
+      "ETF": 91520675,
+      "금은": 31296720,
+      "현금": 68042583
+    },
+    {
+      "date": "06월 15일",
+      "국내주식": 119060500,
+      "해외주식": 21196470,
+      "ETF": 48200010,
+      "금은": 32226740,
+      "현금": 103306129
+    },
+    {
+      "date": "06월 16일",
+      "국내주식": 122131700,
+      "해외주식": 21357721,
+      "ETF": 60722195,
+      "금은": 32320520,
+      "현금": 90434666
+    },
+    {
+      "date": "06월 17일",
+      "국내주식": 119818600,
+      "해외주식": 21014055,
+      "ETF": 66025615,
+      "금은": 32504640,
+      "현금": 100054614
+    },
+    {
+      "date": "06월 18일",
+      "국내주식": 119574300,
+      "해외주식": 20773186,
+      "ETF": 75082420,
+      "금은": 32205160,
+      "현금": 95321803
+    },
+    {
+      "date": "06월 19일",
+      "국내주식": 135472800,
+      "해외주식": 21233760,
+      "ETF": 118156855,
+      "금은": 0,
+      "현금": 63257163
+    },
+    {
+      "date": "06월 22일",
+      "국내주식": 85596320,
+      "해외주식": 21233760,
+      "ETF": 110603660,
+      "금은": 0,
+      "현금": 124319967
+    },
+    {
+      "date": "06월 23일",
+      "국내주식": 78755800,
+      "해외주식": 21035631,
+      "ETF": 110030450,
+      "금은": 0,
+      "현금": 115421566
+    },
+    {
+      "date": "06월 24일",
+      "국내주식": 9450000,
+      "해외주식": 20574432,
+      "ETF": 88502005,
+      "금은": 0,
+      "현금": 213363445
+    },
+    {
+      "date": "06월 25일",
+      "국내주식": 31324500,
+      "해외주식": 20680840,
+      "ETF": 87779655,
+      "금은": 0,
+      "현금": 198249636
+    },
+    {
+      "date": "06월 26일",
+      "국내주식": 80385500,
+      "해외주식": 20680840,
+      "ETF": 90622325,
+      "금은": 0,
+      "현금": 145625205
+    },
+    {
+      "date": "06월 29일",
+      "국내주식": 182794200,
+      "해외주식": 20663890,
+      "ETF": 105745545,
+      "금은": 0,
+      "현금": 152922925
+    }
   ],
-  accountTrendsDaily: [
+  "accountTrendsDaily": [
     {
       "date": "06월 08일",
       "토스 국내": 42824387,
@@ -815,8 +1049,10 @@ export const RECOVERED_DATA = {
       "농협 IRP_Tiger 반도체TOP10": 17370240,
       "농협 연금": 9421800,
       "농협 연금_KODEX은선물": 9421800,
+      "text": "한투 IRP_KODEX 2차전지산업 및 KoAct 바이오헬스케어액티브 추가 매수 완료",
       "신한투자": 71208695,
       "신한투자_예수금(현금)": 20791095,
+      "text2": "메리츠 SK하이닉스 추가 매수 완료",
       "신한투자_삼성전자": 15592500,
       "신한투자_삼성전자우": 17214000,
       "신한투자_한전기술": 5006100,
@@ -924,6 +1160,7 @@ export const RECOVERED_DATA = {
       "농협 연금": 8665160,
       "농협 연금_KODEX은선물": 0,
       "신한투자": 72026176,
+      "text3": "한투 IRP 미국 금은 등 30% 안전자산 재조정 완료",
       "신한투자_예수금(현금)": 18395876,
       "신한투자_삼성전자": 15930000,
       "신한투자_삼성전자우": 16872000,
@@ -939,5 +1176,5 @@ export const RECOVERED_DATA = {
       "한투 IRP_KoAct 바이오헬스케어액티브": 5077800
     }
   ],
-  exportedAt: "2026-06-19T23:30:06.673Z"
+  "exportedAt": "2026-06-29T03:01:01.848Z"
 };

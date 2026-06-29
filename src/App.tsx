@@ -370,33 +370,46 @@ export default function App() {
         let record = existingMap[date] ? { ...existingMap[date] } : { date };
 
         segments.forEach((seg) => {
+          // Check if this segment is brand new (not present in any of the pre-existing trends)
+          const isSegmentNew = !prev.some(day => day[seg.name] !== undefined && day[seg.name] > 0);
+
           if (record[seg.name] === undefined || isToday) {
-            let seed = 0;
-            for (let i = 0; i < seg.name.length; i++) {
-              seed += seg.name.charCodeAt(i);
-            }
-            const stepSeed = Math.sin(seed + indexOffset * 17.31) * 9999;
-            const deviation = isToday ? 0 : ((stepSeed - Math.floor(stepSeed)) - 0.5) * 0.12;
+            if (isSegmentNew && !isToday) {
+              // Newly added account on a past day. Set to 0 to prevent garbage historical backfill.
+              record[seg.name] = 0;
+              const pItems = getSegmentPortfolioItems(seg.name, accounts);
+              pItems.forEach((pItem) => {
+                const itemKey = `${seg.name}_${pItem.name}`;
+                record[itemKey] = 0;
+              });
+            } else {
+              let seed = 0;
+              for (let i = 0; i < seg.name.length; i++) {
+                seed += seg.name.charCodeAt(i);
+              }
+              const stepSeed = Math.sin(seed + indexOffset * 17.31) * 9999;
+              const deviation = isToday ? 0 : ((stepSeed - Math.floor(stepSeed)) - 0.5) * 0.12;
 
-            const dayValuation = Math.round(seg.valuation * (1 - deviation));
-            record[seg.name] = dayValuation;
+              const dayValuation = Math.round(seg.valuation * (1 - deviation));
+              record[seg.name] = dayValuation;
 
-            // Clear old stock keys for this segment if it's today to prevent obsolete stocks from lingering
-            if (isToday) {
-              Object.keys(record).forEach((k) => {
-                if (k.startsWith(`${seg.name}_`)) {
-                  delete record[k];
+              // Clear old stock keys for this segment if it's today to prevent obsolete stocks from lingering
+              if (isToday) {
+                Object.keys(record).forEach((k) => {
+                  if (k.startsWith(`${seg.name}_`)) {
+                    delete record[k];
+                  }
+                });
+              }
+
+              const pItems = getSegmentPortfolioItems(seg.name, accounts);
+              pItems.forEach((pItem) => {
+                const itemKey = `${seg.name}_${pItem.name}`;
+                if (record[itemKey] === undefined || isToday) {
+                  record[itemKey] = Math.round(pItem.currentValuation * (1 - deviation));
                 }
               });
             }
-
-            const pItems = getSegmentPortfolioItems(seg.name, accounts);
-            pItems.forEach((pItem) => {
-              const itemKey = `${seg.name}_${pItem.name}`;
-              if (record[itemKey] === undefined || isToday) {
-                record[itemKey] = Math.round(pItem.currentValuation * (1 - deviation));
-              }
-            });
           }
         });
 
@@ -1046,19 +1059,19 @@ export default function App() {
   // Load initial settings on mounting
   useEffect(() => {
     // Custom active user data restore sequence with precise ETF classification integration
-    const hasActiveRecoveryRun = localStorage.getItem('portfolio_dashboard_restored_uploaded_v12_etf_recovered');
+    const hasActiveRecoveryRun = localStorage.getItem('portfolio_dashboard_restored_uploaded_v13_hantoo_updated');
     if (hasActiveRecoveryRun !== 'yes') {
       const backupRate = RECOVERED_DATA.exchangeRate;
       const backupBaseAmounts = { ...RECOVERED_DATA.segmentBaseAmounts };
-      const preciseAssetTrends = computeExactAssetTrends(RECOVERED_DATA.accountTrendsDaily, RECOVERED_DATA.accounts);
 
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(RECOVERED_DATA.accounts));
       localStorage.setItem(RATE_STORAGE_KEY, backupRate.toString());
       localStorage.setItem('portfolio_dashboard_segment_base_amounts', JSON.stringify(backupBaseAmounts));
       localStorage.setItem('portfolio_dashboard_rebalancing_targets', JSON.stringify(RECOVERED_DATA.rebalancingTargets));
-      localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(preciseAssetTrends));
+      localStorage.setItem('portfolio_asset_trends_daily_v1', JSON.stringify(RECOVERED_DATA.assetTrendsDaily));
       localStorage.setItem('portfolio_account_trends_daily_v1', JSON.stringify(RECOVERED_DATA.accountTrendsDaily));
       localStorage.setItem('portfolio_account_trends_daily_v3_fixed', JSON.stringify(RECOVERED_DATA.accountTrendsDaily));
+      localStorage.setItem('portfolio_dashboard_restored_uploaded_v13_hantoo_updated', 'yes');
       localStorage.setItem('portfolio_dashboard_restored_uploaded_v12_etf_recovered', 'yes');
       localStorage.setItem('portfolio_dashboard_restored_uploaded_v5_gold', 'yes');
 
@@ -1227,7 +1240,7 @@ export default function App() {
           return null;
         })(),
         accountTrendsDaily: (() => {
-          const savedTrends = localStorage.getItem('portfolio_account_trends_daily_v1');
+          const savedTrends = localStorage.getItem('portfolio_account_trends_daily_v3_fixed');
           if (savedTrends) {
             try {
               return JSON.parse(savedTrends);
@@ -1329,6 +1342,8 @@ export default function App() {
         // 6. 계좌별 일별 자산 추이 기록 복원
         if (Array.isArray(importedAccountTrends)) {
           localStorage.setItem('portfolio_account_trends_daily_v1', JSON.stringify(importedAccountTrends));
+          localStorage.setItem('portfolio_account_trends_daily_v3_fixed', JSON.stringify(importedAccountTrends));
+          setAccountTrends(importedAccountTrends);
         }
 
         // 리마운트 및 상태 동기화 트리거
